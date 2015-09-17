@@ -1,0 +1,6 @@
+RewriteEngine On
+RewriteBase /generic-app-draft/app/websites/www/webroot/public
+#RewriteBase /
+RewriteCond $1 !^lib
+RewriteCond $1 !^images
+RewriteRule ^(.*)$ dispatch-http-request.php
