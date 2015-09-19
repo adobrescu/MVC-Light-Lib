@@ -41,9 +41,9 @@ class RootController extends ViewController
 	static protected $___instance;
 	
 	protected $controllers=array();
-	protected $serverDocumentRoots, $publicDocumentRoot, $protectedDocumentRoot;
+	protected $serverDocumentRoots, $publicDocumentRoot;
 	
-	protected $publicDocumentRootLen, $protectedDocumentRootLen;
+	protected $publicDocumentRootLen;
 	
 	protected $documentRootUrl;
 	protected $documentRootUrlLen;
@@ -63,18 +63,12 @@ class RootController extends ViewController
 	protected $httpInput=array();
 	protected $actions;
 	protected $trackedActions=array();
-	protected $lang;
+	
 	protected $requestUri;
 	protected $currentControllerGId;
 	protected $inputVars;
 	protected $currentCS=null;
-	
-	static $___langs=array('en', 'ro', 'de');
-	static $___defaultLang='en';
-	
-	protected $publicDefaultLangDocumentRoot;
-	protected $publicDefaultLangDocumentRootLen;
-	
+		
 	public function __construct($gId, $gFlags, $documentRootUrl, $requestUri, $rootViewTemplateFileName, $rootViewClassName='RootView')
 	{
 		if (static::$___instance)
@@ -93,17 +87,12 @@ class RootController extends ViewController
 		$this->publicDocumentRoot=$this->formatCleanUri($this->serverDocumentRoot.'/'.$documentRootUrl);
 		$this->publicDocumentRootLen=strlen($this->publicDocumentRoot);
 		
-		
-		$this->publicDefaultLangDocumentRoot=$this->publicDocumentRoot.'/'.static::$___defaultLang;
-		$this->publicDefaultLangDocumentRootLen=strlen($this->publicDefaultLangDocumentRoot);
-		
-		chdir($this->publicDefaultLangDocumentRoot);
+		chdir($this->publicDocumentRoot);
 				
 		$pathInfo=pathinfo($this->publicDocumentRoot);
-		$this->protectedDocumentRoot=$pathInfo['dirname'].'/protected';
-		$this->protectedDocumentRootLen=strlen($this->protectedDocumentRoot);
-		/**/
-		$this->getRequestUriDefault($requestUri);
+		
+		$this->requestUri=$requestUri;
+		$_SERVER['REQUEST_DIR']='';
 		
 		Object::$___cacheConfigDir=realpath($this->publicDocumentRoot.'/../../config/cache');
 				
@@ -111,9 +100,7 @@ class RootController extends ViewController
 		
 		$this->createRootView($rootViewClassName, $rootViewTemplateFileName);
 		
-		
-		
-		
+				
 		parent::__construct($gId, $gFlags, null);	
 		
 		if(defined('DEBUG'))
@@ -124,44 +111,6 @@ class RootController extends ViewController
 	protected function createRootView($rootViewClassName, $rootViewTemplateFileName)
 	{
 		$this->view=new $rootViewClassName($this->gId.'View', 0, $this->data, $rootViewTemplateFileName);
-	}
-	/*
-	 * getRequestUriDefault
-	 */
-	protected function getRequestUriDefault($requestUri)
-	{
-		$requestUriParts=parse_url($requestUri);
-		
-		if(!($relPath=$this->getScriptRelativePath(substr($requestUriParts['path'], $this->documentRootUrlLen+1)))
-				|| !$relPath['public'])
-		{
-			$_SERVER['REQUEST_DIR']='';
-			$this->requestUri=$this->documentRootUrl.'/'.$this->controllerScriptIndexName.static::SCRIPT_EXTENSION_CONTROLLER.substr($requestUri, $this->documentRootUrlLen);
-			return;
-		}
-		$this->lang=$relPath['lang'];
-		
-		$spc=$this->getScriptCallComponents($relPath['path'], true, $checkProtectedMethods=false);
-		
-		if(defined('DEBUG'))
-		{
-			$this->debugLoadLangSymlinks();
-		}
-		if($relPath['lang']!=static::$___defaultLang)
-		{
-			
-			
-			$defaultLangControllerScript=substr(realpath($spc[static::CSQ_CONTROLLER][static::CSQ_FILENAME]), $this->publicDefaultLangDocumentRootLen+1);
-			$defaultLangMethodScript=substr(realpath($spc[static::CSQ_METHODS][static::CSQ_FILENAME]), $this->publicDefaultLangDocumentRootLen+1);
-			
-			$_SERVER['REQUEST_DIR']=dirname($this->formatScriptUri($defaultLangControllerScript.substr($defaultLangMethodScript, strlen(dirname($defaultLangControllerScript)))));
-		}
-		else
-		{
-			$_SERVER['REQUEST_DIR']=dirname('/'.$spc[static::CSQ_CONTROLLER][static::CSQ_FILENAME]);
-		}
-		$this->requestUri=$requestUri;
-		
 	}
 	public function setLayout($layoutFileName, $templateFileName='')
 	{
@@ -199,11 +148,6 @@ class RootController extends ViewController
 	{
 		return $this->requestUri;
 	}
-	public function getLang()
-	{
-		return $this->lang;
-	}
-	
 	public function dispatchHttpRequest()
 	{
 		$uriParts=parse_url($this->requestUri);
@@ -260,7 +204,7 @@ class RootController extends ViewController
 		{
 			$relative2Path=realpath($relative2Path);
 		}
-		return substr($path, $relative2Path?strlen($relative2Path):($this->publicDocumentRootLen+3));
+		return substr($path, $relative2Path?strlen($relative2Path):($this->publicDocumentRootLen));
 	}
 	public function mapPath2Url($path)
 	{
@@ -379,121 +323,10 @@ class RootController extends ViewController
 		
 		
 	}
-	public function getScriptRelativePath($path)
-	{
-		static $searchPaths;
-		
-		$relPath=$lang='';
-		$pos=0;
-		if(!$path)
-		{
-			$relPath='';
-			$lang=static::$___defaultLang;
-			$public=true;
-		}
-		else
-		if($path[0]!='/')
-		{
-			//take first element of the path and try to map it to a file
-			//first in public folder then in protected folder
-			$pos=strpos($path, '/', 0);
-			
-			$p=$pos===false?$path:substr($path, 0, $pos );
-			
-			if(is_dir($p) || is_file($p) || is_file($p.static::SCRIPT_EXTENSION_CONTROLLER) || (is_file($p.'.php') && substr($p.'.php', -strlen(static::SCRIPT_EXTENSION_CONTROLLER))==static::SCRIPT_EXTENSION_CONTROLLER ))
-			{
-				$relPath=$path;
-				$lang=static::$___defaultLang;
-				$public=true;
-			}
-			else
-			{
-				if(!$searchPaths)
-				{
-					foreach(static::$___langs as $searchLang)
-					{
-						if($searchLang==static::$___defaultLang)
-						{
-							continue;
-						}
-						$searchPaths[]='../'.$searchLang.'/';
-					}
-					
-					$searchPaths[]='../../protected/';
-				}
-				foreach($searchPaths as $rel2)
-				{
-					if(is_dir($p2=$rel2.$p) || is_file($p2) || is_file($p2.static::SCRIPT_EXTENSION_CONTROLLER) || is_file($p2.static::SCRIPT_EXTENSION_METHOD))
-					{
-						$relPath=$rel2.$path;
-						$lang=strlen($rel2)==6?substr($rel2, 3,2):'';
-						$public=$lang?true:false;
-					}
-				}
-			}
-		}
-		else
-		{
-			do
-			{
-				if(($pos=strpos($path, '/', $pos+1))===false)
-				{
-					break;
-				}
-
-				$p=substr($path, 0, $pos);
-
-				if(substr($realPath=realpath($p), 0, $this->publicDocumentRootLen)==$this->publicDocumentRoot)
-				{
-					$relPath=substr($realPath, $this->publicDocumentRootLen).substr($path, $pos);
-
-					$public=true;
-
-					foreach(static::$___langs as $lang)
-					{
-						if(substr($relPath, 0,strlen($lang)+2)=='/'.$lang.'/')
-						{
-							$relPath=($lang!=static::$___defaultLang?'../'.$lang.'/':'').substr($relPath, strlen($lang)+2);
-
-							break;
-						}
-					}
-				}
-				elseif(substr($realPath, 0, $this->protectedDocumentRootLen)==$this->protectedDocumentRoot)
-				{
-					$relPath='../../protected'.substr($realPath, $this->protectedDocumentRootLen).substr($path, $pos);
-					$lang='';
-					$public=false;
-				}
-				if($relPath)
-				{
-					break;
-				}
-			}
-			while(true);
-		}
-		
-		if($relPath || $lang)
-		{
-			return array(
-				'lang' => $lang,
-				'path' => $this->formatCleanPath($relPath),
-				'public' => $public
-			);
-		}
-	}
 	public function getScriptPathComponents($path, $extension, $checkProtectedMethods, $stopPath=null)
 	{	
-		$relPath=$this->getScriptRelativePath($path);
-		
-		if(!$relPath['public'] && !$checkProtectedMethods)
-		{
-			return;
-		}
-		
-		$searchPath=$relPath['public']?$this->publicDefaultLangDocumentRoot:$this->protectedDocumentRoot;
-		$realPath=$startPath=$searchPath.'/'.($relPath['public']?$relPath['path']: substr($relPath['path'],16));
-		
+		$path=$this->resolvePathDots($path);
+				
 		/* 1. Build $uri path (document root + uri)
 		 * 2. For each sub-path of the obtained path (starting with the deepest = the path itself) try to find a controller script:
 		 * 
@@ -502,46 +335,64 @@ class RootController extends ViewController
 		 * - sub-path is a dir and it contains index+$extension
 		 * - sub-path is a dir and it contains only one file with the extension $extension
 		 */
-		
-		$pos=-1;
-		$stopPos=strlen(realpath($stopPath?$stopPath:$searchPath));
-        $scriptFileName='';
-				
-		do
-        {
-			if( $scriptFileName=$this->isScriptPath($realPath, $extension) )
+		if($path && $path[0]=='/')
+		{
+			$path=substr($path, $this->publicDocumentRootLen+1);
+		}
+		$searchPath=$this->publicDocumentRoot;
+		//foreach(array($this->publicDocumentRoot, $this->protectedDocumentRoot) as $searchPath)
+		{
+			$pos=-1;
+			$stopPos=strlen(realpath($stopPath?$stopPath:$searchPath));
+			$scriptFileName='';
+			
+			if($path && $path[0]=='/')
 			{
-				break;
+				$realPath=$startPath=$path;
+			}
+			else
+			{
+				$realPath=$startPath=$searchPath.($path?'/'.$path:'');
 			}
 			
-            if(($pos=strrpos($realPath, '/'))===false || $pos<$stopPos)
-            {
-                break;
-            }
-						
-            $realPath=substr($realPath, 0, $pos);
+			do
+			{
+				if( $scriptFileName=$this->isScriptPath($realPath, $extension) )
+				{
+					break;
+				}
 
-        }
-        while(true);
-		
+				if(($pos=strrpos($realPath, '/'))===false || $pos<$stopPos)
+				{
+					break;
+				}
+
+				$realPath=substr($realPath, 0, $pos);
+
+			}
+			while(true);
+			
+			
+		}
 		
 		
 		if(!(realpath($scriptFileName)))
 		{
 			return false;
 		}
-				
-		$relFileName=(!$relPath['public']?'../../protected/':'').substr($scriptFileName, strlen($searchPath)+1);
 		
-		return array(
-			'lang' => $relPath['lang'],
+		
+		
+		$relFileName=substr($scriptFileName, strlen($searchPath)+1);//($isProtected?'../protected/':'').substr($scriptFileName, strlen($searchPath)+1);
+		$ret=array(
 			static::CSQ_FILENAME => $relFileName,
-			static::CSQ_ROUTE_URI => $this->getControllerRoute($scriptFileName, !$relPath['public'], $extension),
+			static::CSQ_ROUTE_URI => $this->getControllerRoute($scriptFileName, false, $extension),
 			//static::CSQ_CALL_URI => $this->mapPath2PublicUrl($path, $stopPath),
-			static::CSQ_URI => !$relPath['public'] ? '' : $this->formatScriptUri($this->mapPath2PublicUrl($scriptFileName, $stopPath)),
+			static::CSQ_URI => $this->formatScriptUri($this->mapPath2PublicUrl($scriptFileName, $stopPath)),
 			static::CSQ_ARG_URI => substr($startPath, strlen($realPath)+1),
-			static::CSQ_IS_PROTECTED => !$relPath['public']
+			static::CSQ_IS_PROTECTED => false//$isProtected
 		);
+		return $ret;
 		
 	}
 	
@@ -553,48 +404,6 @@ class RootController extends ViewController
 		}
 		
 		return $dirname;
-	}
-	public function translateUri($uri, $lang)
-	{
-		
-		
-		//$this->debugLoadLangSymlinks();
-		
-		$uriParts=parse_url($uri);
-		
-		if(strlen($uri)==0 || $uri[0]!='/')
-		{
-			$uri='/'.$uri;
-		}
-		
-		if(substr($uri, 0, $this->documentRootUrlLen)== $this->documentRootUrl)
-		{
-			$uri=substr($uri, $this->documentRootUrlLen);
-		}
-		
-		$uri=strlen($uri)==1?'':substr($uri, 1);
-		
-		
-		$scc=$this->getScriptCallComponents($uri, $runDefaultMethod=true, $checkProtectedMethods=false);
-		
-		$defaultLangControllerPath=substr(realpath($scc['controller']['filename']), $this->publicDefaultLangDocumentRootLen+1);
-		$defaultLangMethodPath=substr(realpath($scc['method']['filename']), $this->publicDefaultLangDocumentRootLen+1);
-			
-		if($lang!=static::$___defaultLang)
-		{
-			$uri=$this->langSymlinks[$defaultLangControllerPath][$lang].'/'.substr($this->langSymlinks[$defaultLangMethodPath][$lang], strlen($this->dirname($this->langSymlinks[$defaultLangControllerPath][$lang])));
-		}
-		else
-		{
-			$uri=$defaultLangControllerPath.'/'.substr($defaultLangMethodPath, strlen($this->dirname($defaultLangControllerPath)));
-		}
-		
-		
-		
-		
-		$uri=$this->documentRootUrl.$this->formatScriptUri($uri).$scc['method']['arg_uri'];
-		
-		return $uri;
 	}
 	public function getControllerGIdByRouteUri($controllerRouteUri)
 	{
@@ -751,7 +560,8 @@ class RootController extends ViewController
 		{
 			if($isHttpRequest)
 			{
-				throw new Exception();
+				throw new Exception(__METHOD__.'Cannot include controller script: '."\n".$scriptFileName);
+				
 			}
 			else
 			{
@@ -840,7 +650,7 @@ class RootController extends ViewController
 	 */
 	protected function processCSQ()
 	{
-		
+		//print_r($this->csq); die();
 		
 		$this->parseInputVars($_POST, $this->currentControllerGId, $this->currentCS);//[static::CSQ_METHODS]['args'], $this->currentCS[static::CSQ_CONTROLLER]['args']);
 		
@@ -963,13 +773,7 @@ class RootController extends ViewController
 	{
 		$fullPath=$this->resolvePathDots($fullPath);
 		
-		$len=$isProtected
-				?
-				$this->protectedDocumentRootLen
-				:
-				$this->publicDocumentRootLen+3;
-		
-		return $route=substr($fullPath, $len+1, -strlen($extension));
+		return $route=substr($fullPath, $this->publicDocumentRootLen+1, -strlen($extension));
 	}
 	
 	public function getUri($controllerGId, $methodUriOrFileName, $params, $controllerParams, $targetGId, $actId, $methodName, $actionParams, $relative2DocumentRootUrl=false)
@@ -1008,39 +812,17 @@ class RootController extends ViewController
 	{
 		return $this->getUri($controllerGId='', $methodFileName='', $params=null, $controllerParams=null, $targetGId, $actId, $methodName, $actionParams, $relative2DocumentRootUrl=false);
 	}
-	public function translateControllerMethodUri($controllerGId, $methodUriOrFileName)
-	{
-		if(!isset($this->langSymlinks[$this->controllerScriptUris[$controllerGId][static::CSQ_FILENAME]][$this->lang]))
-		{
-			return '';
-		}
-		$controllerFile=$this->langSymlinks[$this->controllerScriptUris[$controllerGId][static::CSQ_FILENAME]][$this->lang];
-			
-			
-		$controllerDir=dirname($this->controllerScriptUris[$controllerGId][static::CSQ_FILENAME]);
-		$methodFile=substr($this->langSymlinks[($controllerDir!='.'?$controllerDir.'/':'').$methodUriOrFileName.'.php'][$this->lang],
-					dirname($controllerFile)!='.'?strlen(dirname($controllerFile))+1:0);
-		
-		
-		return $this->formatScriptUri($controllerFile.'/'.$methodFile);
-
-	}
 	public function getControllerMethodUri($controllerGId, &$methodUriOrFileName, $params=null, $controllerParams=null, $relative2DocumentRootUrl=false)
 	{		
 		
 		//@fixme
 		//when $methodUriOrFileName is a full path filename, $controllerPath is wrong
 				
-		if($this->lang!=static::$___defaultLang)
-		{
-			$uri=$this->translateControllerMethodUri($controllerGId, $methodUriOrFileName);			
-		}
-		else
-		{
-			$controllerPath=$this->publicDocumentRoot.$this->controllerScriptUris[$controllerGId][static::CSQ_URI];
-			$uri=$this->formatScriptUri(
-						$this->controllerScriptUris[$controllerGId][static::CSQ_URI].'/'.($methodUriOrFileName=str_replace($controllerPath, '', $methodUriOrFileName.'/')));
-		}
+		
+		$controllerPath=$this->publicDocumentRoot.$this->controllerScriptUris[$controllerGId][static::CSQ_URI];
+		$uri=$this->formatScriptUri(
+					$this->controllerScriptUris[$controllerGId][static::CSQ_URI].'/'.($methodUriOrFileName=str_replace($controllerPath, '', $methodUriOrFileName.'/')));
+		
 		
 		if(!isset($this->controllerScriptUris[$controllerGId]))
 		{
@@ -1077,11 +859,7 @@ class RootController extends ViewController
 	}
 	public function uri($uri)
 	{
-		$uriParts=parse_url($uri);
-		
-		
-		return $this->translateUri($uri, $this->lang);
-		
+		return $uri;	
 	}
 	/*debugging mode methods (DEBUG constant defined)*/
 	public function debugLoadControllerScripts()
@@ -1090,7 +868,7 @@ class RootController extends ViewController
 		$layoutFileName=$this->layoutFileName;
 		$templateFileName=$this->view->getTemplateFileName();
 		$checkProtectedMethods=false;
-		foreach(array($this->publicDefaultLangDocumentRoot, $this->protectedDocumentRoot) as $dirName)
+		foreach(array($this->publicDocumentRoot) as $dirName)
 		{
 			$dir=new Directory2($dirName);
 			if($controllerScripts=$dir->getTree('*'.static::SCRIPT_EXTENSION_CONTROLLER))
@@ -1114,36 +892,6 @@ class RootController extends ViewController
 		
 		return $this->controllerScriptUris;
 	}
-	protected function debugLoadLangSymlinks()
-	{
-		foreach(static::$___langs as $lang)
-		{
-			if($lang==static::$___defaultLang)
-			{
-				continue;
-			}
-			$dir=new Directory2($this->publicDocumentRoot.'/'.$lang);
-			$controllerScripts=$dir->getTree('*'.static::SCRIPT_EXTENSION_CONTROLLER);
-			
-			$dir=new Directory2($this->publicDocumentRoot.'/'.$lang);
-			$methodScripts=$dir->getTree('*'.static::SCRIPT_EXTENSION_METHOD);
-			$allScripts=array_merge($controllerScripts, $methodScripts);
-			
-			foreach($allScripts as $scriptFullPath)
-			{
-				if(!is_link($scriptFullPath))
-				{
-					continue;
-				}
-				$realPath=realpath($scriptFullPath);
-				
-				$enUri=substr($realPath, $this->publicDefaultLangDocumentRootLen+1);
-				$langUri=substr($scriptFullPath, strlen($this->publicDocumentRoot.'/'.$lang)+1);
-				$this->langSymlinks[$enUri][$lang]=$langUri;
-			}
-		}
-	}
-	protected $langSymlinks;
 	public function debugGetControllerScriptUris()
 	{
 		return $this->controllerScriptUris;
