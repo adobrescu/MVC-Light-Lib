@@ -18,18 +18,24 @@ class Controller extends Object
 	public function resolvePathDots($path)
 	{
 		$resolvedPath=str_replace('/./', '/', $path);
-		$dotsPos=0;
+		$dotsPos=$searchStartPos=0;
 		
 		while(true)
 		{
-			if(($dotsPos=strpos($resolvedPath, '../'))===false)
+			if(($dotsPos=strpos($resolvedPath, '/../', $searchStartPos))===false || $dotsPos===0)
 			{
 				break;
 			}
 			
-			$prevSlashPos=strrpos($resolvedPath, '/', -(strlen($resolvedPath)+2-($dotsPos)));
+			$prevSlashPos=strrpos($resolvedPath, '/', -(strlen($resolvedPath)-($dotsPos)+1));
 			
-			$resolvedPath=substr($resolvedPath, 0, $prevSlashPos).substr($resolvedPath, $dotsPos+2);
+			if(substr($resolvedPath, $prevSlashPos+1, $dotsPos-$prevSlashPos-1)=='.')
+			{
+				$searchStartPos=$dotsPos+1;
+				continue;
+			}
+			
+			$resolvedPath=substr($resolvedPath, 0, $prevSlashPos===false?0:$prevSlashPos+1).substr($resolvedPath, $dotsPos+4);
 			
 			
 			
