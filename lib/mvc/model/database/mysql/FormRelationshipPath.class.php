@@ -2,8 +2,6 @@
 
 namespace alib\model;
 
-include_once(__DIR__.'/RelationshipPath.class.php');
-
 class FormRelationshipPath extends RelationshipPath
 {
 	const FORM_PATH_SEPARATOR='/';
@@ -87,7 +85,7 @@ class FormRelationshipPath extends RelationshipPath
 		{
 			$decodedSource=$source;
 		}
-		//print_r($decodedSource);die();
+		
 		parent::import($decodedSource, $params);
 	}
 }
