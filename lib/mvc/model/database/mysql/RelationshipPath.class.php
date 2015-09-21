@@ -1438,6 +1438,9 @@ class RelationshipRecordWrapper
 				case 'content_images_translations':
 					$className='ContentImageTranslation';
 					break;
+				case 'users':
+					$className='User';
+					break;
 			}
 		}
 		else
@@ -1511,7 +1514,7 @@ class RelationshipRecordWrapper
 		}
 		if($className)
 		{
-			return 'alib\\model\\'.$className;
+			return $className;
 		}
 		
 		die('Cannot find class name for table `'.Database::$___defaultInstance->getName().'`.`'.$genericTableName.'`');
