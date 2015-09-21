@@ -40,13 +40,20 @@ class FormRelationshipPath extends RelationshipPath
 			$decodedSource=array();
 			foreach($source as $encodedPath=>$arrRecord)
 			{
-				echo $encodedPath."\n".($decodedPath=$this->decodePrefix($encodedPath))."\n\n\n";
+				$decodedPath=$this->decodePrefix($encodedPath);
 
 				$pathKeys=explode(static::FORM_PATH_SEPARATOR, $decodedPath);
 				$numPathKeys=count($pathKeys);
-
+			
 				$ref=&$decodedSource;
-
+				
+				if($numPathKeys==2)
+				{
+					$decodedSource[static::IDX_DATA][$pathKeys[1]]=$arrRecord;
+					
+					continue;
+				}
+				else
 				for($i=0; $i<$numPathKeys; $i++)
 				{
 					if($i<$numPathKeys-1)
