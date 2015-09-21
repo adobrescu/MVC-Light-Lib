@@ -167,7 +167,7 @@ class Database extends \mysqli
 	/*Schemas info*/
 	public function getRecordSchema($tableName, $tableNamePrefix='')
 	{
-		$configCacheFilename=CONFIG_CACHE_DIR.'/database/schemas.inc.php';
+		$configCacheFilename=AUTO_GENERATED_CONFIG_FILES_DIR.'/database/schemas.inc.php';
 		
 		if(!isset(static::$___schemas[$this->name][$tableName]))
 		{
@@ -190,7 +190,7 @@ class Database extends \mysqli
 	
 	public function getRelationships($skipTablesOne2One=array(), $skipTables=array(), $backReferencedTables=array(), $tablesPrefix='')
 	{
-		$configCacheFilename=CONFIG_CACHE_DIR.'/database/relationships.inc.php';
+		$configCacheFilename=AUTO_GENERATED_CONFIG_FILES_DIR.'/database/relationships.inc.php';
 		
 		if(!isset(static::$___relationships[$this->name]))
 		{
