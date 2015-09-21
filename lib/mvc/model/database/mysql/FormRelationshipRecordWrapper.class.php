@@ -2,7 +2,7 @@
 
 namespace alib\model;
 
-include_once(__DIR__.'/RelationshipPath.class.php');
+include_once(__DIR__.'/FormRelationshipPath.class.php');
 
 class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 {
