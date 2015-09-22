@@ -102,7 +102,10 @@ class Database extends \mysqli
 	public function query($query)
 	{
 		static::$numQueries++;
-		
+		if(isset($GLOBALS['dbg']) &&$GLOBALS['dbg'])
+		{
+			echo $query."\n-------------------------------------------------------\n\n";
+		}
 		$result=parent::query($query);
 		
 		if($result===false)
