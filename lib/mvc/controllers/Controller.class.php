@@ -7,11 +7,11 @@ class Controller extends Object
 	protected $views, $view;
 	protected $data;//generic data (eg. a db record, data loaded from a file etc)
 	
-	public function __construct($gId, $gFlags, $data)
+	public function __construct($gId, $gFlags, &$data=null)
 	{
 		parent::__construct($gId, $gFlags);
 		
-		$this->data=$data;
+		$this->data=&$data;
 	}
 	public function formatCleanUri($path, $leadingSlash=true, $trailingSlash=false)
 	{
