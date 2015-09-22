@@ -1299,9 +1299,9 @@ class RelationshipPath
 		
 	}
 	
-	public function import($source, $params)
+	public function import($source, $params, $overwriteRootWrapper)
 	{
-		$this->importDataTreeNode($source, $params);
+		$this->importDataTreeNode($source, $params, $null, $null, $null, $null, $overwriteRootWrapper);
 		
 	}
 	public function export(&$source)
