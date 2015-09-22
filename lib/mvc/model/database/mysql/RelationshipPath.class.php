@@ -899,11 +899,13 @@ class RelationshipPath
 			
 			if($newDataKey==$recordPathKey)
 			{
+				//echo 'continue: '.$newDataKey;
 				continue;
 			}
 			$updateKeys2[$recordPathKey]=$newDataKey;
 			if(is_object($recordWrapper))
 			{
+				//echo 'new rpk:'.$newDataKey."\n";
 				$recordWrapper->rpk=$newDataKey;
 			}
 			$refData[static::IDX_DATA][$newDataKey]=&$refData[static::IDX_DATA][$recordPathKey];
