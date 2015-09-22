@@ -1176,7 +1176,7 @@ class RelationshipPath
 			}
 		}
 	}
-	public function importDataTreeNode($node, $params, &$sharedNode=null, $visitDataKey='', $visitDataFK='', &$parentSharedNode=null)
+	public function importDataTreeNode($node, $params, &$sharedNode=null, $visitDataKey='', $visitDataFK='', &$parentSharedNode=null, $overwriteRootWrapper=false)
 	{
 		if(is_null($sharedNode))
 		{
@@ -1229,7 +1229,39 @@ class RelationshipPath
 			foreach($node[RelationshipPath::IDX_DATA] as $recordRPK=>$arrRecord)
 			{
 				//echo $recordRPK."\n";
-				$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]=new $this->recordWrapperClassName( $arrRecord, $this, $recordRPK, $tableName);//$this->createRecordWrapper($arrRecord, $recordRPK);//$record->getArrayRecord();//$record->tableName;
+				
+				if($overwriteRootWrapper && $nodeType==0 && $sharedNode[RelationshipPath::IDX_DATA])
+				{
+					//$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]
+					$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]=$sharedNode[RelationshipPath::IDX_DATA][key($sharedNode[RelationshipPath::IDX_DATA])];
+					//die('axxa'.$recordRPK);
+				}
+				
+				if(!isset($sharedNode[RelationshipPath::IDX_DATA][$recordRPK]))
+				{
+					$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]=new $this->recordWrapperClassName( $arrRecord, $this, $recordRPK, $tableName);//$this->createRecordWrapper($arrRecord, $recordRPK);//$record->getArrayRecord();//$record->tableName;
+				}
+				else
+				{
+					foreach($arrRecord as $columnName=>$columnValue)
+					{
+						echo $columnName.'='.$columnValue."\n";
+						if($columnName=='id_user')
+						{
+							continue;
+						}
+						try
+						{
+							$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]->$columnName=$columnValue;
+						}
+						catch(\Exception $err)
+						{
+							echo $err->getCode();
+							die('23');
+						}
+					}
+					//die('axxa');
+				}
 			}
 		}
 		
