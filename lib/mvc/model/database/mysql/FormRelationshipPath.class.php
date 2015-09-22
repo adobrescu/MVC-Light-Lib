@@ -22,12 +22,12 @@ class FormRelationshipPath extends RelationshipPath
 	}
 	protected function encodePrefix($prefix)
 	{
-		//return $prefix;
+		return $prefix;
 		return base64_encode($prefix);
 	}
 	protected function decodePrefix($prefix)
 	{
-		//return $prefix;
+		return $prefix;
 		return base64_decode($prefix);
 	}
 	protected function decodeSource($source)
