@@ -1,0 +1,9 @@
+22.sep.2015
+
+1. E nevoie sa se poata face teste automate pentru pagini cu date colectate la testare manuala;
+
+2. Pentru user->add trebuie teste pentru:
+	- validare date
+	- colectare erori
+	- afisare erori
+	- salvare date
