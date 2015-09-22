@@ -97,7 +97,7 @@ class DatabaseSchema extends Database
 		
 		return $recordSchema;
 	}
-	public function getRelationships()
+	public function getRelationships($skipTablesOne2One=array(), $skipTables=array(), $backReferencedTables=array(), $tablesPrefix='')
 	{
 		return $this->relationships;
 	}
