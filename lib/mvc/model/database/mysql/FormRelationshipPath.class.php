@@ -33,7 +33,7 @@ class FormRelationshipPath extends RelationshipPath
 	protected function decodeSource($source)
 	{
 	}
-	public function import($source, $params, $decode=true)
+	public function import($source, $params, $decode=true, $overwriteRoot=true)
 	{
 		if($decode)
 		{
@@ -87,7 +87,7 @@ class FormRelationshipPath extends RelationshipPath
 		{
 			$decodedSource=$source;
 		}
-		
-		parent::import($decodedSource, $params);
+		//print_r($decodedSource);
+		parent::import($decodedSource, $params, $overwriteRoot);
 	}
 }
