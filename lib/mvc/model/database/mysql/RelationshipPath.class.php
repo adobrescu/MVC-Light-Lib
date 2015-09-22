@@ -1216,32 +1216,38 @@ class RelationshipPath
 				
 				if($overwriteRootWrapper && $nodeType==0 && $sharedNode[RelationshipPath::IDX_DATA])
 				{
-					//$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]
-					$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]=$sharedNode[RelationshipPath::IDX_DATA][key($sharedNode[RelationshipPath::IDX_DATA])];
+					//echo 'da: '.$recordRPK."\n";
+					$key=key($sharedNode[RelationshipPath::IDX_DATA]);
+					if($key!=$recordRPK)
+					{
+						//$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]
+						$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]=&$sharedNode[RelationshipPath::IDX_DATA][$key];
+						$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]->rpk=$recordRPK;
+						//echo '$key: '.$key."\n\n\n";
+						unset($sharedNode[RelationshipPath::IDX_DATA][$key]);
+					}
 					//die('axxa'.$recordRPK);
 				}
 				
 				if(!isset($sharedNode[RelationshipPath::IDX_DATA][$recordRPK]))
 				{
+					//echo 'aicisha'.$this->recordWrapperClassName;
+					//print_r($arrRecord);
 					$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]=new $this->recordWrapperClassName( $arrRecord, $this, $recordRPK, $tableName);//$this->createRecordWrapper($arrRecord, $recordRPK);//$record->getArrayRecord();//$record->tableName;
 				}
 				else
 				{
 					foreach($arrRecord as $columnName=>$columnValue)
 					{
-						echo $columnName.'='.$columnValue."\n";
-						if($columnName=='id_user')
-						{
-							continue;
-						}
 						try
 						{
+							//echo get_class($sharedNode[RelationshipPath::IDX_DATA][$recordRPK]->record)."\n";
 							$sharedNode[RelationshipPath::IDX_DATA][$recordRPK]->$columnName=$columnValue;
 						}
 						catch(\Exception $err)
 						{
-							echo $err->getCode();
-							die('23');
+							//echo $err->getCode();
+							//die('23');
 						}
 					}
 					//die('axxa');
@@ -1324,7 +1330,7 @@ class RelationshipPath
 				continue;
 			}
 			$data[$key]=$val->getArrayRecord();
-			$data[$key]['data_key']=$val->rpk;
+			$data[$key]['rpk']=$val->rpk;
 			$data[$key]['class']=get_class($val);
 			$data[$key]['table']=$val->getGenericTableName();
 		}
