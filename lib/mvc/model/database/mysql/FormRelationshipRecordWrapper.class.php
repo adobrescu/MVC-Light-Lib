@@ -36,15 +36,17 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		
 		foreach($idColumnNames=array_keys(RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY']) as $idColumnName)
 		{
+			if($this->record->$idColumnName)
 			$arrRecordId[$idColumnName]=$this->record->$idColumnName;
 		}
 		
-		$record=new $className($arrRecordId, null);
-		
+		$record=new $className(isset($arrRecordId)?$arrRecordId:null, null);
+		//print_r($arrRecordId);
 		foreach($this->record->getArrayRecord() as $columnName=>$columnValue)
 		{
 			try
 			{
+				//echo $columnName.'=>'.$columnValue."\n";
 				$record->$columnName=$columnValue;
 			}
 			catch(\Exception $err)
@@ -75,8 +77,13 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 	public function import($source, $params, $decode=true)
 	{
 		//$this->relationshipPath->path[0][RelationshipPath::IDX_DATA]=array();
+		//$key=key($this->relationshipPath->path[0][RelationshipPath::IDX_DATA]);
+		//unset($this->relationshipPath->path[0][RelationshipPath::IDX_DATA][$key]);
+		//echo $key;
 		//$this->relationshipPath->debugPrintData(); die();
 		$this->relationshipPath->import($source, $params, $decode, true);
+		
+		//print_r(array_keys($this->relationshipPath->path[0][RelationshipPath::IDX_DATA]));
 	}
 	
 }
