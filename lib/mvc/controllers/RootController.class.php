@@ -101,7 +101,7 @@ class RootController extends ViewController
 		$this->createRootView($rootViewClassName, $rootViewTemplateFileName);
 		
 				
-		parent::__construct($gId, $gFlags, null);	
+		parent::__construct($gId, $gFlags);	
 		
 		if(defined('DEBUG'))
 		{
