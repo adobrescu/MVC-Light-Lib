@@ -573,7 +573,9 @@ class FormRecord extends RecordSchema
 		$this->tableName=$tableName;
 		parent::__construct($id, $arrRecord);
 	}
-	
+	public function validateColumn($columnName, $columnValue)
+	{
+	}
 	public function setArrayRecord($arrRecord)
 	{
 		$this->arrRecord=$arrRecord;
