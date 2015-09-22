@@ -40,7 +40,12 @@ class Object
 		$this->loadConfigFile();
 		$this->rootController=RootController::$___instance;
 		
+		$this->registerActions();
+		
 		static::$___instances[$this->gId]=&$this;
+	}
+	protected function registerActions()
+	{
 	}
 	static public function ___getInstanceByGId($gId)
 	{
