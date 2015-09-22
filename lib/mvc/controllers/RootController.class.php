@@ -726,10 +726,9 @@ class RootController extends ViewController
 						}
 					}
 					
-					
+					/*dispatch actions to controller before dispatching to the target view*/
+					$this->dispatchActions($controller, $this->httpInput);
 				}
-				/*dispatch actions to controller before dispatching to the target view*/
-				$this->dispatchActions($controller, $this->httpInput);
 				if($this->processCSQPhase==1) //current controller included, skip to next phase
 				{
 					break;
@@ -758,7 +757,7 @@ class RootController extends ViewController
 				{
 					@call_user_func_array (  array($controller,$methodName ) , array($actId, static::PCSQ_BEFORE_ACTION, $targetGId, $targetData, $targetData) );
 				}
-				echo $actId.' '.$targetGId;
+				
 				$target->$methodName($actId, static::PCSQ_ACTION, $targetGId, $targetData, $targetData);
 				
 				if($targetGId!=$controllerGId)
