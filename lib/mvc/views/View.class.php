@@ -33,7 +33,7 @@ class View extends Object
 	protected $tabs, $crtTab;
 	static protected $___documentRootUrl;
 	
-	public function __construct($gId, $gFlags, &$data, $templateFileName, $htmlTag='')
+	public function __construct($gId, $gFlags, $templateFileName, &$data=null, $htmlTag='')
 	{
 		parent::__construct($gId, $gFlags);
 		
