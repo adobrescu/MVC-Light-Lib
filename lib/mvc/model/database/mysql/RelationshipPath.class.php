@@ -824,27 +824,9 @@ class RelationshipPath
 	}
 	public function saveRecordWrapper($wrapper, $refData, $visitData=array())
 	{
-		$class=get_class($wrapper->record	);
-		if($class='alib\model\ContentTranslation')// && $wrapper->title=='2nd Level Category 13')
-		{
-			$arr=$wrapper->record->getArrayRecord();
-			if(isset($arr['title']) && $arr['title']=='2nd Level Category 13')
-			{
-				$i=0;
-				//print_r($arr);
-				//echo $class."\n";
-			}
-		}
+		
 		$parentRecordWrapper=$this->getParentWrapper($wrapper, $refData);
-		if($class='alib\model\ContentTranslation')// && $wrapper->title=='2nd Level Category 13')
-		{
-			$arr=$wrapper->record->getArrayRecord();
-			if(isset($arr['title']) && $arr['title']=='2nd Level Category 13')
-			{
-				print_r($arr);
-				echo $class."\n";
-			}
-		}
+		
 		$wrapper->save($visitData['update_keys']);
 		
 	}
