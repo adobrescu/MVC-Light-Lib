@@ -45,6 +45,10 @@ class View extends Object
 			$this->htmlTag=$htmlTag;
 		}
 	}
+	public function setData(&$data)
+	{
+		$this->data=&$data;
+	}
 	static public function ___setDocumentRootUrl($documentRootUrl)
 	{
 		static::$___documentRootUrl=$documentRootUrl;
