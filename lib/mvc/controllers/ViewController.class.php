@@ -10,6 +10,7 @@ class ViewController extends Controller
 	public function addView($view, $flags, $pos)
 	{
 		$this->views[$viewGId=$view->getGId()]=$this->rootController->view->addView($view, $flags, $pos);
+		$this->views[$viewGId]->setData($this->data);
 		
 		if(!$this->view)
 		{
