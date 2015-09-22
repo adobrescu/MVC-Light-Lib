@@ -49,6 +49,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 			}
 			catch(\Exception $err)
 			{
+				// @todo: collect errors
 			}
 		}
 		try
@@ -60,7 +61,10 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		}
 		catch(\Exception $err)
 		{
+			// @todo: collect errors
 		}
+		
+		// @todo: throw errors if any
 	}
 	
 	public function export(&$source)
@@ -70,7 +74,9 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 	}
 	public function import($source, $params, $decode=true)
 	{
-		$this->relationshipPath->import($source, $params, $decode);
+		//$this->relationshipPath->path[0][RelationshipPath::IDX_DATA]=array();
+		//$this->relationshipPath->debugPrintData(); die();
+		$this->relationshipPath->import($source, $params, $decode, true);
 	}
 	
 }
