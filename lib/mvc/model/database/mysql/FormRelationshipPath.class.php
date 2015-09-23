@@ -7,7 +7,7 @@ include_once(__DIR__.'/RelationshipPath.class.php');
 class FormRelationshipPath extends RelationshipPath
 {
 	const FORM_PATH_SEPARATOR='/';
-	public function buildFormPrefix($rpk)
+	public function buildPathString($rpk)
 	{
 		$prefix='';
 		for($i=0; $i<=$this->pathLastIndex; $i++)

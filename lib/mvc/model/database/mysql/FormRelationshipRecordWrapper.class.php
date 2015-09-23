@@ -37,7 +37,9 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		foreach($idColumnNames=array_keys(RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY']) as $idColumnName)
 		{
 			if($this->record->$idColumnName)
-			$arrRecordId[$idColumnName]=$this->record->$idColumnName;
+			{
+				$arrRecordId[$idColumnName]=$this->record->$idColumnName;
+			}
 		}
 		
 		$record=new $className(isset($arrRecordId)?$arrRecordId:null, null);
@@ -85,5 +87,8 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		
 		//print_r(array_keys($this->relationshipPath->path[0][RelationshipPath::IDX_DATA]));
 	}
-	
+	public function buildPathString($rpk)
+	{
+		return $this->relationshipPath->buildPathString($this->rpk);
+	}
 }
