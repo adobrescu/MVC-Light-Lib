@@ -6,7 +6,7 @@ include_once(__DIR__.'/Record.trait.php');
 
 class RelationshipPath
 {
-	public $mostRightTableName;
+	protected $mostRightTableName;
 	static $___relationships;//@todo: rename to $___relationshipDefs
 	static $___sharedData=array();
 	
@@ -25,8 +25,8 @@ class RelationshipPath
 	protected $database, $databaseName, $tablesPrefix;
 	protected $parentRecordWrapper, $parentRecordWrapperDepth;
 	
-	public $pathLastIndex;
-	public $path; //array of refernces to nodes that creates the path
+	protected $pathLastIndex;
+	protected $path; //array of refernces to nodes that creates the path
 	protected $recordWrapperClassName='';
 	
 	static protected $___uq=1;
