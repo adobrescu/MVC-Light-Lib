@@ -2,6 +2,7 @@
 
 namespace alib\model;
 
+include_once(__DIR__.'/../../../../core/Exception.classes.php');
 include_once(__DIR__.'/DatabaseSchema.class.php');
 
 define('DEFAULT_DB_USERNAME', 'root');
@@ -110,7 +111,7 @@ class Database extends \mysqli
 		
 		if($result===false)
 		{
-			throw new \Exception(__METHOD__.' sql error:'.$this->error.'<br>Query: '.htmlentities($query));
+			throw new \Exception(__METHOD__.' sql error:'.$this->error.'<br>Query: '.htmlentities($query), 101);
 		}
 		
 		return $result;
