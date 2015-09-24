@@ -1,5 +1,7 @@
 <?php
 
+namespace alib;
+
 class Error
 {
 	public $code, $context;
@@ -89,5 +91,16 @@ class Exception2 extends \Exception
 		}
 
 		return null;
+	}
+	public function getErrorCodes()
+	{
+		foreach($this->exceptions as $row=>$errors)
+		{
+			foreach($errors as $err)
+			{
+				$errorCodes[$row][]=$err->code;
+			}
+		}
+		return $errorCodes;
 	}
 }
