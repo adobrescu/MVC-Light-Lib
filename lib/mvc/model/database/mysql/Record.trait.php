@@ -166,6 +166,10 @@ class RecordSchema
 	}
 	public function __set($propertyName, $propertyValue)
 	{
+		if(isset($this->pkColumns[$this->columnAliases[$propertyName]]))
+		{
+			return;
+		}
 		if(isset($this->columnAliases[$propertyName]))
 		{
 			$this->validateColumn($this->columnAliases[$propertyName], $propertyValue);
@@ -532,7 +536,7 @@ class Record extends RecordSchema
 		{
 			$this->insert();
 		}
-		
+		$this->loaded=true;
 		$this->updateRecordReference();
 	}
 	protected function update()
