@@ -2,6 +2,7 @@
 
 namespace alib\model;
 
+include_once(__DIR__.'/../../../../core/Exception.classes.php');
 include_once(__DIR__.'/FormRelationshipPath.class.php');
 
 class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
@@ -34,7 +35,8 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		$tableName=$this->record->getGenericTableName();
 		$className=parent::getTableClassName($tableName);
 		
-		foreach($idColumnNames=array_keys(RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY']) as $idColumnName)
+		$idColumnNames=RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY'];
+		foreach(array_keys($idColumnNames) as $idColumnName)
 		{
 			if($this->record->$idColumnName)
 			{
@@ -43,7 +45,9 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		}
 		
 		$record=new $className(isset($arrRecordId)?$arrRecordId:null, null);
-		//print_r($arrRecordId);
+		
+		$errors=new \alib\Exception2();
+		
 		foreach($this->record->getArrayRecord() as $columnName=>$columnValue)
 		{
 			try
@@ -54,8 +58,11 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 			catch(\Exception $err)
 			{
 				// @todo: collect errors
+				echo $columnName."\n";
+				$errors->addException($err);
 			}
 		}
+		//$errors->throwIfErrors();
 		try
 		{
 			$record->save();
@@ -66,9 +73,12 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		catch(\Exception $err)
 		{
 			// @todo: collect errors
+			echo "UPDATE\n";
+			$errors->addException($err);
 		}
 		
 		// @todo: throw errors if any
+		$errors->throwIfErrors();
 	}
 	
 	public function export(&$source)
@@ -90,5 +100,9 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 	public function buildPathString($rpk)
 	{
 		return $this->relationshipPath->buildPathString($this->rpk);
+	}
+	public function getMostRightTableName()
+	{
+		return $this->relationshipPath->getMostRightTableName();
 	}
 }
