@@ -12,8 +12,17 @@ class FormController extends ViewController
 		//$this->data->relationshipPath->debugPrintData();
 		$GLOBALS['dbg']=true;
 		echo '<pre>';
-		$this->data->saveAll();
+		try
+		{
+			$this->data->saveAll();
+		}
+		catch(\alib\Exception2 $err)
+		{
+			//die('axxa');
+			$this->view->setErrorCodes($err->getErrorCodes());
+		}
 		echo '</pre>';
+		
 		//echo 'rpk: '.$this->data->rpk;
 		//$this->data->relationshipPath->debugPrintData();
 		//echo '</pre>';
