@@ -1,6 +1,6 @@
 <?php
 
-include_once(__DIR__.'/Exception.class.php');
+include_once(__DIR__.'/Exception.classes.php');
 
 class Object
 {
