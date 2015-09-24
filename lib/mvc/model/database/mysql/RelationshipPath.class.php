@@ -155,6 +155,10 @@ class RelationshipPath
 		$this->pathLastIndex=count($this->path)-1;
 		
 	}
+	public function getMostRightTableName()
+	{
+		return $this->mostRightTableName;
+	}
 	public function release()
 	{
 		$pathLen=$this->pathLastIndex;
@@ -303,7 +307,7 @@ class RelationshipPath
 		}
 		
 		$query=$this->buildSqlSelect();
-
+		
 		if($arrRecordset=$this->database->loadArrayRecordset($query))
 		{
 
