@@ -13,6 +13,10 @@ class Controller extends Object
 		
 		$this->data=$data;
 	}
+	public function getData()
+	{
+		return $this->data;
+	}
 	public function formatCleanUri($path, $leadingSlash=true, $trailingSlash=false)
 	{
 		return preg_replace(array('/[\/]+/', '/\/$/', '/^[\/]/' ), array('/', $trailingSlash?'/':'', $leadingSlash?'/':''), ($leadingSlash?'/':'').$path.($trailingSlash?'/':''));
