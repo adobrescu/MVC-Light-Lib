@@ -10,8 +10,8 @@ class FormController extends ViewController
 		$this->data->import($_POST['data'], array(\alib\model\RelationshipPath::IDX_LOADED => true));
 		
 		//$this->data->relationshipPath->debugPrintData();
-		$GLOBALS['dbg']=true;
-		echo '<pre>';
+		//$GLOBALS['dbg']=true;
+		//echo '<pre>';
 		try
 		{
 			$this->data->saveAll();
@@ -21,7 +21,7 @@ class FormController extends ViewController
 			//die('axxa');
 			$this->view->setErrorCodes($err->getErrorCodes());
 		}
-		echo '</pre>';
+//		/echo '</pre>';
 		
 		//echo 'rpk: '.$this->data->rpk;
 		//$this->data->relationshipPath->debugPrintData();
