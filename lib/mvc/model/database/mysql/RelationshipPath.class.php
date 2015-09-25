@@ -323,7 +323,7 @@ class RelationshipPath
 				$path=$arrRecord['____PATH____'];
 				unset($arrRecord['____PARENT_ID____'], $arrRecord['____PATH____']);
 				
-				$lastPathNodeData[$startPathKeys[$ID].'\\'.$path]=$this->createRecordWrapper($arrRecord, $startPathKeys[$ID].'\\'.$path);
+				$lastPathNodeData[$startPathKeys[$ID].'\\'.$path]=$return=new $this->recordWrapperClassName( $arrRecord, $this, $startPathKeys[$ID].'\\'.$path, $this->mostRightTableName);;//$this->createRecordWrapper($arrRecord, $startPathKeys[$ID].'\\'.$path);
 			}
 		}
 			
@@ -766,7 +766,7 @@ class RelationshipPath
 			die(__METHOD__.': cannot add new record');
 		}
 		$recordPathKey=$overwriteExisting && $existingDataKey? $existingDataKey: $recordPathKey.'\\'.$newRecordKey;
-		$this->path[$i][static::IDX_DATA][$recordPathKey]=$this->createRecordWrapper($arrRecord, $recordPathKey);
+		$this->path[$i][static::IDX_DATA][$recordPathKey]=new $this->recordWrapperClassName( $arrRecord, $this, $recordPathKey, $this->mostRightTableName);//$this->createRecordWrapper($arrRecord, $recordPathKey);
 		$this->path[$i][static::IDX_DATA2][$this->parentRecordWrapper->rpk][]=&$this->path[$i][static::IDX_DATA][$recordPathKey];
 		$this->path[$i][static::IDX_DATA][$recordPathKey]->relationshipPath=$this;
 		if(!$this->parentRecordWrapper->isPersistent())
