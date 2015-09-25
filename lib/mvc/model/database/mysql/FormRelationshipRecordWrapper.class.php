@@ -36,6 +36,8 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		$className=parent::getTableClassName($tableName);
 		
 		$idColumnNames=RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY'];
+		//print_r($idColumnNames);
+		//print_r($this->record->getArrayRecord());
 		foreach(array_keys($idColumnNames) as $idColumnName)
 		{
 			if($this->record->$idColumnName)
@@ -43,7 +45,13 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 				$arrRecordId[$idColumnName]=$this->record->$idColumnName;
 			}
 		}
-		
+		/*
+		if(isset($arrRecordId))
+		{
+			print_r($arrRecordId);
+		}
+		 * 
+		 */
 		$record=new $className(isset($arrRecordId)?$arrRecordId:null, null);
 		
 		$errors=new \alib\Exception2();
