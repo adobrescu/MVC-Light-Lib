@@ -562,7 +562,10 @@ class Record extends RecordSchema
 		
 		$pkIndex=$this->buildPKIndex($this->arrRecordId);
 		
+		static::$___arrRecords[$this->tableName][$pkIndex]=null;
 		unset(static::$___arrRecords[$this->tableName][$pkIndex]);
+		
+		static::$___arrRecordIds[$this->tableName][$pkIndex]=null;
 		unset(static::$___arrRecordIds[$this->tableName][$pkIndex]);
 	}
 	
