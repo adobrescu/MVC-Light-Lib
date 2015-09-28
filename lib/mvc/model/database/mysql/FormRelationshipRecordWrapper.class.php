@@ -66,6 +66,10 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		
 		foreach($this->record->getArrayRecord() as $columnName=>$columnValue)
 		{
+			if(isset($this->pkColumns[$this->columnAliases[$columnName]]))//do not set id fields
+			{
+				continue;
+			}
 			try
 			{
 				//echo $columnName.'=>'.$columnValue."\n";
@@ -78,7 +82,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 				$errors->addException($err);
 			}
 		}
-		//$errors->throwIfErrors();
+		$errors->throwIfErrors();
 		try
 		{
 			$record->save();
