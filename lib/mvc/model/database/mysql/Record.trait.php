@@ -4,14 +4,18 @@ namespace alib\model;
 
 include_once(__DIR__.'/Database.class.php');
 
-class RecordSchema
-{
-	const ERR_WRONG_FORMAT=100;
+const ERR_WRONG_FORMAT=100;
 	const ERR_REQUIRED=101;
 	const ERR_OUT_OF_RANGE=102;
 	const ERR_TO_LONG=103;
 	const ERR_INVALID_VALUE=104;
-	
+
+trait RecordSchema
+{
+	protected $database;
+	protected $columns, $columnAliases; //columns info and (type, length etc) and aliases (eg id_user, idUser)
+	protected $pkColumns; //columns that compose the PK
+	protected $autoIncrementColumnName; //auto_increment column (part of PK)
 	static $___typeFormatPatterns=array(
 		Database::TYPE_BINARY => '',
 		Database::TYPE_BIT => '[01]+',
@@ -25,52 +29,8 @@ class RecordSchema
 		Database::TYPE_TIME => '[0-9]{2}\:[0-9]{2}\:[0-9]{2}){0,1}',
 		Database::TYPE_TIMESTAMP => ''
 	);
-	
-	//protected $tableName;
-	protected $arrRecord, $arrRecordId; //references to coresponding record arrays from $___arrRecords and $___arrRecordIds
-	protected $database;
-	static protected $___arrRecords, $___arrRecordIds; //array records 
-	
-	protected $loaded=true;
-	
-	protected $newRecordPkIndex; //set for new records (no id) until they are saved
-	
-	protected $columns, $columnAliases; //columns info and (type, length etc) and aliases (eg id_user, idUser)
-	protected $pkColumns; //columns that compose the PK
-	protected $autoIncrementColumnName; //auto_increment column (part of PK)
-	
-	
-	protected $uqid;
-	
-	//@todo : explain $id/$arrRecord combinations
-	/*
-	 * $id set => persistent record (stored into db)
-	 * $id: SELECT, DELETE
-	 * $id, $arrRecord: UPDATE
-	 * 
-	 * $arrRecord only: sint 2 variante:
-	 * 
-	 * 1. din $arrRecord se poate incarca $arrRecordId si exista $___arrRecords corespunzator id-ului => persistent
-	 * 2. din $arrRecord nu se poate incarca $arrRecordId sau nu exista $___arrRecords corespunzator id-ului => not persistent
-	 * 
-	 * Exista si varianta ca id sa se poate incarca din $arrRecord si sa nu existe  $___arrRecords corespunzator id-ului dar totusi inregistrarea
-	 * sa existe in bd dar sa nu fi fost incarcata si atunci ar trebui ca record-ul sa fie persistent
-	 * 
-	 * @fixme poate ar trebui un select care sa lamureasca situatia de mai sus?
-	 *  
-	 */
-	
-	
-	public function __construct($id, $arrRecord)
+	public function __construct()
 	{
-		// @todo ??
-		/*
-		if(!$id && !$arrRecord)
-		{
-			die(__METHOD__.': no id and no record array specified');
-		}
-		*/
-		
 		$this->database=Database::$___defaultInstance;
 		
 		/*get table info*/
@@ -80,109 +40,6 @@ class RecordSchema
 		$this->columnAliases=$schema[Database::IDX_COLUMN_ALIASES];
 		$this->pkColumns=$schema[Database::IDX_ID_COLUMNS]['PRIMARY'];
 		$this->autoIncrementColumnName=$schema[Database::IDX_ID_AUTOINCREMENT_COLUMN];
-		
-		
-		$this->uqid=uniqid();
-		//$this->dataKey=$dataKey;
-		/*asta e pasat la constructia de relationship-uri*/
-				
-		if($id && !is_array($id)) //assume a PK with only one column
-		{
-			$id=array(key($this->pkColumns) => $id);
-		}
-		if($id)//din id-ul primit se pastreaza numai campurile care compun pk-ul
-		{
-			$id=$this->getIdFromArray($id);
-		}
-		else
-		if(!$id && $arrRecord)
-		{
-			//daca nu s-a primit un id dar acesta poate fi incarcat din array-ul primit ca record,
-			//trebuie verificat daca exista in bd o inregistrare cu acel id pentru a se stabili daca 
-			//record-ul este persistent sau nu
-			if($id=$this->getIdFromArray($arrRecord))
-			{
-				$query='';
-				
-				foreach($id as $pkColumnName=>$pkColumnValue)
-				{
-					$query.=($query?' AND ':'').'`'.$this->tableName.'`.`'.$pkColumnName.'`='.$this->buildSqlColumnValue($pkColumnName, $pkColumnValue);
-				}
-				
-				$query='SELECT 1 FROM `'.$this->tableName.'` WHERE '.$query;
-				
-				if(!$this->database->loadArrayRecord($query))
-				{
-					$id=null;
-				}
-			}
-		}
-		//set $arrRecord, $arrRecordId to reference coresponding entries from $___arrRecords and $___arrRecordIds
-		$this->setRecordReference($id, $arrRecord);
-		
-		
-		
-	}
-	public function getDatabase()
-	{
-		return $this->database;
-	}
-	public function getUqId()
-	{
-		return $this->uqid;
-	}
-	protected function getIdFromArray($arr)
-	{
-		foreach($this->pkColumns as $pkColumnName=>$extra)
-		{
-			if(!isset($arr[$pkColumnName]))
-			{
-				return null;
-			}
-			$id[$pkColumnName]=$arr[$pkColumnName];
-		}
-		return $id;
-	}
-	public function __call($methodName, $methodArgs)
-	{
-		
-		echo __METHOD__.': method not found: '.$methodName;
-		throw new \Exception();
-	}
-	
-	public function &__get($propertyName)
-	{
-		if(isset($this->columnAliases[$propertyName]))
-		{
-			if(!$this->loaded)
-			{
-				$this->select();
-			}
-			return $this->arrRecord[$this->columnAliases[$propertyName]];
-		}
-		
-		echo __METHOD__.': property not found: '.$propertyName;
-		throw new \Exception();
-	}
-	public function __set($propertyName, $propertyValue)
-	{
-		if(isset($this->pkColumns[$this->columnAliases[$propertyName]]))
-		{
-			return;
-		}
-		if(isset($this->columnAliases[$propertyName]))
-		{
-			$this->validateColumn($this->columnAliases[$propertyName], $propertyValue);
-			$this->arrRecord[$this->columnAliases[$propertyName]]=$propertyValue;
-		}
-		else
-		{
-			/*
-			echo(__METHOD__.': column '.$this->tableName.'.'.$propertyName.' not found');
-			print_r(debug_backtrace(10));
-			die();
-			 */
-		}
 	}
 	public function validateColumn($columnName, $columnValue)
 	{
@@ -193,7 +50,7 @@ class RecordSchema
 				$columnDef[Database::IDX_FLAGS] & Database::FLAG_NOT_NULL)
 				)
 		{
-			throw new \Exception('', static::ERR_REQUIRED);
+			throw new \Exception('', ERR_REQUIRED);
 		}
 		
 		if($isEmpty)
@@ -206,7 +63,7 @@ class RecordSchema
 		{
 			if(!preg_match('/^'.static::$___typeFormatPatterns[$columnDef[Database::IDX_TYPE]].'$/', $columnValue, $columnValueParts))
 			{
-				throw new \Exception('', static::ERR_WRONG_FORMAT);
+				throw new \Exception('', ERR_WRONG_FORMAT);
 			}
 		}
 		
@@ -253,7 +110,7 @@ class RecordSchema
 		
 		if($invalidValue)
 		{
-			throw new \Exception('', static::ERR_INVALID_VALUE);
+			throw new \Exception('', ERR_INVALID_VALUE);
 		}
 		//check length
 		//@todo de verificat daca este adevarat: lungimea campului in MySql reprezinta numarul de bytes pe care acesta il ocupa
@@ -262,7 +119,7 @@ class RecordSchema
 		//Deci este ok comparatia intre cele 2 (lungime camp si lungime string/strlen) pentru validare
 		if(isset($columnDef[Database::IDX_MAX_LENGTH]) && $columnDef[Database::IDX_MAX_LENGTH]<strlen($columnValue))
 		{
-			throw new \Exception('', static::ERR_TO_LONG);
+			throw new \Exception('', ERR_TO_LONG);
 		}
 		//check min/max values
 		if((isset($columnDef[Database::IDX_MIN_VALUE]) && $columnValue<$columnDef[Database::IDX_MIN_VALUE])
@@ -278,7 +135,7 @@ class RecordSchema
 			)
 			)
 		{
-			throw new \Exception('', static::ERR_OUT_OF_RANGE);
+			throw new \Exception('', ERR_OUT_OF_RANGE);
 		}
 	}
 	/*simple getters*/
@@ -294,6 +151,232 @@ class RecordSchema
 	{
 		return $this->tableNamePrefix;
 	}
+	public function getDatabase()
+	{
+		return $this->database;
+	}
+	/* build sql statements methods*/
+	public function buildSqlInsert($arrRecord)
+	{
+		$queryColumnNames=$queryColumnValues='';
+		
+		foreach($arrRecord as $columnName=>$columnValue)
+		{
+			$queryColumnNames.=($queryColumnNames?',':'').Database::SQL_ID_QUOTE.$columnName.Database::SQL_ID_QUOTE;
+			$queryColumnValues.=($queryColumnValues?',':'').$this->buildSqlColumnValue($columnName, $columnValue);
+		}
+		$query='INSERT INTO '.Database::SQL_ID_QUOTE.$this->tableNamePrefix.$this->tableName.Database::SQL_ID_QUOTE.'
+				('.$queryColumnNames.')
+				VALUES
+				('.$queryColumnValues.')';
+		return $query;
+	}
+	public function buildSqlSelect($arrRecordId)
+	{
+		$query='SELECT *
+			FROM `'.$this->tableNamePrefix.$this->tableName.'`
+			WHERE '.$this->buildSqlWhereId($arrRecordId);
+		
+		return $query;
+	}
+	public function buildSqlUpdate($arrRecordId, $arrRecord)
+	{
+		$query='';
+		foreach($arrRecord as $columnName=>$columnValue)
+		{
+			if(isset($this->pkColumns[$columnName]) && $arrRecordId[$columnName]==$columnValue)
+			{
+				continue;
+			}
+			$query.=($query?','."\n":'').Database::SQL_ID_QUOTE.$columnName.Database::SQL_ID_QUOTE.'='.$this->buildSqlColumnValue($columnName, $columnValue);
+		}
+		
+		if(!$query)
+		{
+			return;
+		}
+		
+		$query='UPDATE '.Database::SQL_ID_QUOTE.$this->tableNamePrefix.$this->tableName.Database::SQL_ID_QUOTE.'
+			SET '.$query.' WHERE '.$this->buildSqlWhereId($arrRecordId);
+		
+		return $query;
+	}
+	public function buildSqlDelete($arrRecordId)
+	{
+		return 'DELETE FROM 
+			'.Database::SQL_ID_QUOTE.$this->tableNamePrefix.$this->tableName.Database::SQL_ID_QUOTE.
+			' WHERE '.$this->buildSqlWhereId($arrRecordId);
+		
+		
+	}
+	public function buildSqlWhereId($arrRecordId)
+	{
+		$query='';
+		
+		foreach($arrRecordId as $pkColumnName=>$pkColumnValue)
+		{
+			$query .= ($query? ' AND ':'').$this->tableName.'.'.Database::SQL_ID_QUOTE.$pkColumnName.Database::SQL_ID_QUOTE.'='.$this->buildSqlColumnValue($pkColumnName, $pkColumnValue);
+		}
+		
+		return $query;
+	}
+	public function buildSqlColumnValue($columnName, $columnValue)
+	{
+		
+		$columnSchema=$this->columns[$columnName];
+		
+		
+		switch ($columnSchema[Database::IDX_TYPE])
+		{
+			case Database::TYPE_INTEGER:
+			case Database::TYPE_DECIMAL:
+			case Database::TYPE_FLOAT:
+				return $columnValue==='' || is_null($columnValue)?'NULL':$columnValue;
+				break;
+			case Database::TYPE_BIT:
+				return $columnValue==='' || is_null($columnValue)?'NULL':'b\''.$columnValue.'\'';
+				break;
+			case Database::TYPE_STRING:
+			case Database::TYPE_DATETIME:
+			case Database::TYPE_DATE:
+			case Database::TYPE_TIME:
+			case Database::TYPE_TIMESTAMP:
+			case Database::TYPE_BLOB:
+			case Database::TYPE_BINARY:
+				return is_null($columnValue)?'NULL':'\''.addslashes($columnValue).'\'';//$this->real_escape_string($columnValue).'\'';
+				break;
+		}
+	}
+}
+
+class ReadOnlyRecord 
+{
+	use RecordSchema
+	{
+		RecordSchema::__construct as RecordSchema___construct;
+	}
+	//protected $tableName;
+	protected $arrRecord, $arrRecordId; //references to coresponding record arrays from $___arrRecords and $___arrRecordIds
+	//protected $database;
+	static protected $___arrRecords, $___arrRecordIds; //array records 
+	
+	protected $loaded=true;
+	
+	protected $newRecordPkIndex; //set for new records (no id) until they are saved
+	
+	protected $uqid;
+	
+	
+		
+	//@todo : explain $id/$arrRecord combinations
+	/*
+	 * $id set => persistent record (stored into db)
+	 * $id: SELECT, DELETE
+	 * $id, $arrRecord: UPDATE
+	 * 
+	 * $arrRecord only: sint 2 variante:
+	 * 
+	 * 1. din $arrRecord se poate incarca $arrRecordId si exista $___arrRecords corespunzator id-ului => persistent
+	 * 2. din $arrRecord nu se poate incarca $arrRecordId sau nu exista $___arrRecords corespunzator id-ului => not persistent
+	 * 
+	 * Exista si varianta ca id sa se poate incarca din $arrRecord si sa nu existe  $___arrRecords corespunzator id-ului dar totusi inregistrarea
+	 * sa existe in bd dar sa nu fi fost incarcata si atunci ar trebui ca record-ul sa fie persistent
+	 * 
+	 * @fixme poate ar trebui un select care sa lamureasca situatia de mai sus?
+	 *  
+	 */
+	
+	
+	public function __construct($id, $arrRecord)
+	{
+		// @todo ??
+		/*
+		if(!$id && !$arrRecord)
+		{
+			die(__METHOD__.': no id and no record array specified');
+		}
+		*/
+		
+		$this->RecordSchema___construct();
+		
+		
+		$this->uqid=uniqid();
+		//$this->dataKey=$dataKey;
+		/*asta e pasat la constructia de relationship-uri*/
+				
+		if($id && !is_array($id)) //assume a PK with only one column
+		{
+			$id=array(key($this->pkColumns) => $id);
+		}
+		if($id)//din id-ul primit se pastreaza numai campurile care compun pk-ul
+		{
+			$id=$this->getIdFromArray($id);
+		}
+		else
+		if(!$id && $arrRecord)
+		{
+			//daca nu s-a primit un id dar acesta poate fi incarcat din array-ul primit ca record,
+			//trebuie verificat daca exista in bd o inregistrare cu acel id pentru a se stabili daca 
+			//record-ul este persistent sau nu
+			if($id=$this->getIdFromArray($arrRecord))
+			{
+				$query='';
+				
+				foreach($id as $pkColumnName=>$pkColumnValue)
+				{
+					$query.=($query?' AND ':'').'`'.$this->tableName.'`.`'.$pkColumnName.'`='.$this->buildSqlColumnValue($pkColumnName, $pkColumnValue);
+				}
+				
+				$query='SELECT 1 FROM `'.$this->tableName.'` WHERE '.$query;
+				
+				if(!$this->database->loadArrayRecord($query))
+				{
+					$id=null;
+				}
+			}
+		}
+		//set $arrRecord, $arrRecordId to reference coresponding entries from $___arrRecords and $___arrRecordIds
+		$this->setRecordReference($id, $arrRecord);
+		
+		
+		
+	}
+	
+	public function getUqId()
+	{
+		return $this->uqid;
+	}
+	protected function getIdFromArray($arr)
+	{
+		foreach($this->pkColumns as $pkColumnName=>$extra)
+		{
+			if(!isset($arr[$pkColumnName]))
+			{
+				return null;
+			}
+			$id[$pkColumnName]=$arr[$pkColumnName];
+		}
+		return $id;
+	}
+	
+	
+	public function &__get($propertyName)
+	{
+		if(isset($this->columnAliases[$propertyName]))
+		{
+			if(!$this->loaded)
+			{
+				$this->select();
+			}
+			return $this->arrRecord[$this->columnAliases[$propertyName]];
+		}
+		
+		echo __METHOD__.': property not found: '.$propertyName;
+		throw new \Exception();
+	}
+	
+	
+	
 	public function getArrayRecord()
 	{
 		if(!$this->loaded)
@@ -405,9 +488,6 @@ class RecordSchema
 			
 		}
 	}
-	
-	
-	
 	protected function buildPKIndex($id)
 	{
 		$pkIndex='';
@@ -418,101 +498,10 @@ class RecordSchema
 		return $pkIndex;
 	}
 	
-	/* build sql statements methods*/
-	public function buildSqlInsert()
-	{
-		$queryColumnNames=$queryColumnValues='';
-		
-		foreach($this->arrRecord as $columnName=>$columnValue)
-		{
-			$queryColumnNames.=($queryColumnNames?',':'').Database::SQL_ID_QUOTE.$columnName.Database::SQL_ID_QUOTE;
-			$queryColumnValues.=($queryColumnValues?',':'').$this->buildSqlColumnValue($columnName, $columnValue);
-		}
-		$query='INSERT INTO '.Database::SQL_ID_QUOTE.$this->tableNamePrefix.$this->tableName.Database::SQL_ID_QUOTE.'
-				('.$queryColumnNames.')
-				VALUES
-				('.$queryColumnValues.')';
-		return $query;
-	}
-	public function buildSqlSelect()
-	{
-		$query='SELECT *
-			FROM `'.$this->tableName.'`
-			WHERE '.$this->buildSqlWhereId();
-		
-		return $query;
-	}
-	public function buildSqlUpdate()
-	{
-		$query='';
-		foreach($this->arrRecord as $columnName=>$columnValue)
-		{
-			if(isset($this->pkColumns[$columnName]) && $this->arrRecordId[$columnName]==$columnValue)
-			{
-				continue;
-			}
-			$query.=($query?','."\n":'').Database::SQL_ID_QUOTE.$columnName.Database::SQL_ID_QUOTE.'='.$this->buildSqlColumnValue($columnName, $columnValue);
-		}
-		
-		if(!$query)
-		{
-			return;
-		}
-		
-		$query='UPDATE '.Database::SQL_ID_QUOTE.$this->tableName.Database::SQL_ID_QUOTE.'
-			SET '.$query.' WHERE '.$this->buildSqlWhereId();
-		
-		return $query;
-	}
-	public function buildSqlDelete()
-	{
-		return 'DELETE FROM 
-			'.Database::SQL_ID_QUOTE.$this->tableName.Database::SQL_ID_QUOTE.
-			' WHERE '.$this->buildSqlWhereId();
-		
-		
-	}
-	public function buildSqlWhereId()
-	{
-		$query='';
-		
-		foreach($this->arrRecordId as $pkColumnName=>$pkColumnValue)
-		{
-			$query .= ($query? ' AND ':'').$this->tableName.'.'.Database::SQL_ID_QUOTE.$pkColumnName.Database::SQL_ID_QUOTE.'='.$this->buildSqlColumnValue($pkColumnName, $pkColumnValue);
-		}
-		
-		return $query;
-	}
-	public function buildSqlColumnValue($columnName, $columnValue)
-	{
-		
-		$columnSchema=$this->columns[$columnName];
-		
-		
-		switch ($columnSchema[Database::IDX_TYPE])
-		{
-			case Database::TYPE_INTEGER:
-			case Database::TYPE_DECIMAL:
-			case Database::TYPE_FLOAT:
-				return $columnValue==='' || is_null($columnValue)?'NULL':$columnValue;
-				break;
-			case Database::TYPE_BIT:
-				return $columnValue==='' || is_null($columnValue)?'NULL':'b\''.$columnValue.'\'';
-				break;
-			case Database::TYPE_STRING:
-			case Database::TYPE_DATETIME:
-			case Database::TYPE_DATE:
-			case Database::TYPE_TIME:
-			case Database::TYPE_TIMESTAMP:
-			case Database::TYPE_BLOB:
-			case Database::TYPE_BINARY:
-				return is_null($columnValue)?'NULL':'\''.addslashes($columnValue).'\'';//$this->real_escape_string($columnValue).'\'';
-				break;
-		}
-	}
+	
 	protected function select()
 	{
-		$query=$this->buildSqlSelect();
+		$query=$this->buildSqlSelect($this->arrRecordId);
 		$arrRecord=$this->database->loadArrayRecord($query);
 		foreach($arrRecord as $columnName=>$columnValue)
 		{
@@ -521,7 +510,9 @@ class RecordSchema
 	}
 }
 
-class Record extends RecordSchema
+
+
+class Record extends ReadOnlyRecord
 {
 	
 
@@ -536,19 +527,35 @@ class Record extends RecordSchema
 		{
 			$this->insert();
 		}
-		$this->loaded=true;
+		
 		$this->updateRecordReference();
+	}
+	public function __set($propertyName, $propertyValue)
+	{
+		if(isset($this->columnAliases[$propertyName]))
+		{
+			$this->validateColumn($this->columnAliases[$propertyName], $propertyValue);
+			$this->arrRecord[$this->columnAliases[$propertyName]]=$propertyValue;
+		}
+		else
+		{
+			/*
+			echo(__METHOD__.': column '.$this->tableName.'.'.$propertyName.' not found');
+			print_r(debug_backtrace(10));
+			die();
+			 */
+		}
 	}
 	protected function update()
 	{
-		if($query=$this->buildSqlUpdate())
+		if($query=$this->buildSqlUpdate($this->arrRecordId, $this->arrRecord))
 		{
 			$this->database->query($query);
 		}
 	}
 	protected function insert()
 	{
-		$query=$this->buildSqlInsert();
+		$query=$this->buildSqlInsert($this->arrRecord);
 		$this->database->query($query);
 		if($this->autoIncrementColumnName)
 		{
@@ -558,7 +565,7 @@ class Record extends RecordSchema
 	
 	public function delete()
 	{
-		$this->database->query($this->buildSqlDelete());
+		$this->database->query($this->buildSqlDelete($this->arrRecordId));
 		
 		$pkIndex=$this->buildPKIndex($this->arrRecordId);
 		
@@ -571,8 +578,9 @@ class Record extends RecordSchema
 	
 }
 
-class FormRecord extends RecordSchema
+class FormRecord extends ReadOnlyRecord
 {
+	
 	protected $tableName='', $tableNamePrefix='';
 	
 	public function __construct($id, $arrRecord, $tableName)
@@ -580,8 +588,12 @@ class FormRecord extends RecordSchema
 		$this->tableName=$tableName;
 		parent::__construct($id, $arrRecord);
 	}
-	public function validateColumn($columnName, $columnValue)
+	public function __set($propertyName, $propertyValue)
 	{
+		if(isset($this->columnAliases[$propertyName]))
+		{
+			$this->arrRecord[$this->columnAliases[$propertyName]]=$propertyValue;
+		}
 	}
 	public function setArrayRecord($arrRecord)
 	{

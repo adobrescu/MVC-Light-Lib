@@ -7,17 +7,25 @@ include_once(__DIR__.'/FormRelationshipPath.class.php');
 
 class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 {
+	use RecordSchema
+	{
+		RecordSchema::__construct as RecordSchema___construct;
+	}
+	protected $tableNamePrefix='';
 	public $tableName;
 	public function __construct($record, $relationshipPath=null, $rpk='', $tableName='')
 	{
+		
 		if(is_object($record) && !is_a($record, 'FormRecord'))
 		{
 			//die('axxa');
 			//root wrapper
 			$record=new FormRecord($record->getArrayRecordId(), $record->getArrayRecord(), $tableName=$record->getTableName());
 		}
-		//$this->tableName=$tableName?$tableName:$record->getGenericTableName();
+		$this->tableName=$tableName?$tableName:$record->getGenericTableName();
 		parent::__construct($record, $relationshipPath, $rpk, $tableName);
+		
+		$this->RecordSchema___construct();
 	}
 	
 	protected function createRelationshipPath()
@@ -35,23 +43,23 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		$tableName=$this->record->getGenericTableName();
 		$className=parent::getTableClassName($tableName);
 		
-		$idColumnNames=RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY'];
+		//$idColumnNames=RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY'];
 		//print_r($idColumnNames);
 		//print_r($this->record->getArrayRecord());
-		foreach(array_keys($idColumnNames) as $idColumnName)
+		foreach(array_keys($this->pkColumns) as $idColumnName)
 		{
 			if($this->record->$idColumnName)
 			{
 				$arrRecordId[$idColumnName]=$this->record->$idColumnName;
 			}
 		}
-		/*
+		
 		if(isset($arrRecordId))
 		{
 			print_r($arrRecordId);
 		}
-		 * 
-		 */
+		
+		
 		$record=new $className(isset($arrRecordId)?$arrRecordId:null, null);
 		
 		$errors=new \alib\Exception2();
@@ -112,5 +120,53 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 	public function getMostRightTableName()
 	{
 		return $this->relationshipPath->getMostRightTableName();
+	}
+	public function buildHtmlInput($name, $type, $value=null)
+	{
+		if($type=='checkbox')
+		{
+			$html=$this->buildHtmlInput($name, 'hidden', $this->columns[$name][Database::IDX_DEFAULT]);
+			$attrs=($this->$name==$this->columns[$name][Database::IDX_DEFAULT]?'':' checked');
+			
+			$value='1';
+		}
+		else
+		{
+			$attrs='';
+		}
+		$html=(isset($html)?$html:'').'<input type="'.$type.'" name="'.$this->relationshipPath->buildPathString($this->rpk).'['.$name.']" value="'.(is_null($value)?$this->$name:$value).'" '.$attrs;
+		
+		if($type!='hidden')
+		{
+			$html.=' id="'.$this->relationshipPath->getMostRightTableName().'_'.$name.'"';
+		}
+		
+		$html.='>';
+		
+		return $html;
+	}
+	public function buildHtmlPkInput()
+	{
+		$html='';
+
+		foreach(array_keys($this->pkColumns) as $idColumnName)
+		{
+			$html.=($html?"\n":'').$this->buildHtmlInput($idColumnName, 'hidden');
+		}
+		return $html;
+	}
+	public function buildHtmlFormField($name, $label, $type)
+	{
+		$template='<div class="form-field clearfix"><label for="%label_for">%label</label>%input</div>';
+		
+		$html=str_replace(array('%label_for', '%label', '%input' ),
+				array(
+						$this->relationshipPath->getMostRightTableName().'_'.$name,
+						$label,
+						$this->buildHtmlInput($name, $type)
+					),
+				$template
+				);
+		return $html;
 	}
 }

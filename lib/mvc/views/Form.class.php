@@ -10,6 +10,7 @@ class Form extends View
 	{
 		$this->errorCodes=$errorCodes;
 	}
+	
 	protected function formatErrors()
 	{
 		if(!$this->errorCodes)
@@ -24,5 +25,10 @@ class Form extends View
 			}
 		}
 		return $errors;
+	}
+	
+	public function debugGetErrorCodes()
+	{
+		return $this->errorCodes;
 	}
 }
