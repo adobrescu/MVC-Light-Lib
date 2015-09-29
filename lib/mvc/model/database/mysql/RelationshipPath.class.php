@@ -242,7 +242,7 @@ class RelationshipPath
 	{
 		$lastPathNodeInfo=&$this->path[$this->pathLastIndex];
 		
-		if(!$lastPathNodeInfo[static::IDX_LOADED])
+		if(!$lastPathNodeInfo[static::IDX_LOADED] && $itemsType!=3)
 		{
 			$this->load();
 		}
