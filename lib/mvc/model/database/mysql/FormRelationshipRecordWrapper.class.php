@@ -130,7 +130,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		if($type=='checkbox')
 		{
 			$html=$this->buildHtmlInput($name, 'hidden', $this->columns[$name][Database::IDX_DEFAULT]);
-			$attrs=($this->$name==$this->columns[$name][Database::IDX_DEFAULT]?'':' checked');
+			$attrs=($this->$name=='1'?' checked':'');
 			
 			$value='1';
 		}
@@ -146,6 +146,15 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		}
 		
 		$html.='>';
+		
+		return $html;
+	}
+	public function buildHtmlTextArea($name, $type, $value=null)
+	{
+		
+		$html='<textarea name="'.$this->relationshipPath->buildPathString($this->rpk).'['.$name.']">'.(is_null($value)?$this->$name:$value).'</textarea>';
+		
+		
 		
 		return $html;
 	}
@@ -167,7 +176,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 				array(
 						$this->relationshipPath->getMostRightTableName().'_'.$name,
 						$label,
-						$this->buildHtmlInput($name, $type)
+						$type=='textarea' ? $this->buildHtmlTextArea($name, $type) : $this->buildHtmlInput($name, $type)
 					),
 				$template
 				);
