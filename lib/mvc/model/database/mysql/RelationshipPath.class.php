@@ -10,17 +10,17 @@ class RelationshipPath
 	static $___relationships;//@todo: rename to $___relationshipDefs
 	static $___sharedData=array();
 	
-	const IDX_DATA=0;//'data'; //node records array
+	const IDX_DATA='records'; //node records array
 	const IDX_DATA2='data';//'data'; //node records array
-	const IDX_LOADED=1;//'loaded'; //true if the data was loaded from database
-	const IDX_CHILDREN=2;//'children'; //child nodes array
+	const IDX_LOADED='loaded'; //true if the data was loaded from database
+	const IDX_CHILDREN='children'; //child nodes array
 	
-	const IDX_NODE_KEY=3;//'node_key'; //key of node entry in parent children array 
-	const IDX_NODE_TYPE=4;//'type'; //0 - root node, 1 - FK node, 3 - clause node
-	const IDX_REF_DATA_PARENT=5;//'parent_info'; //reference to parent node
-	const IDX_NODE_RELATIONSHIP=6;//'relationship2';
-	const IDX_FK=7;//'fk'; //node FK; for clause nodes it's the FK of the first ascendant that has a FK
-	const IDX_ROOT_TABLE_NAME=8;//'rootTableName'; //the table where the path starts
+	const IDX_NODE_KEY='node_key'; //key of node entry in parent children array 
+	const IDX_NODE_TYPE='type'; //0 - root node, 1 - FK node, 3 - clause node
+	const IDX_REF_DATA_PARENT='parent_info'; //reference to parent node
+	const IDX_NODE_RELATIONSHIP='relationship';
+	const IDX_FK='fk'; //node FK; for clause nodes it's the FK of the first ascendant that has a FK
+	const IDX_ROOT_TABLE_NAME='rootTableName'; //the table where the path starts
 	
 	protected $database, $databaseName, $tablesPrefix;
 	protected $parentRecordWrapper, $parentRecordWrapperDepth;
