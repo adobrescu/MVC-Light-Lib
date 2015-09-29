@@ -29,7 +29,7 @@ class FormController extends ViewController
 	}
 	protected function registerActions()
 	{
-		RootController::___getInstance()->registerAction('userController', 'actiune', 'onSubmit');
+		RootController::___getInstance()->registerAction($this->gId, 'actiune', 'onSubmit');
 	}
 	
 }
