@@ -251,6 +251,7 @@ class RelationshipPath
 		{
 			if(!isset($lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk]))
 			{
+				//echo $this->parentRecordWrapper->rpk."<br>\n";
 				$lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk]=array();
 				
 				$cnt=substr_count($this->parentRecordWrapper->rpk, '\\');
@@ -270,12 +271,22 @@ class RelationshipPath
 					
 					//$lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk][$recordPathKey]=$recordWrapper;
 				}
+				
+				foreach(array_keys($lastPathNodeInfo[static::IDX_REF_DATA_PARENT][static::IDX_DATA]) as $parentRpk)
+				{
+					if(!isset($lastPathNodeInfo[static::IDX_DATA2][$parentRpk]))
+					{
+						$lastPathNodeInfo[static::IDX_DATA2][$parentRpk]=array();
+					}
+				}
+				
 			}
 			
 			$parentDataKeyLen=strlen($this->parentRecordWrapper->rpk);
 			
 			if($itemsType==1)
 			{
+				//echo 'da<br><hr>';
 				return $lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk];
 			}
 			
