@@ -35,6 +35,8 @@ class FormRelationshipPath extends RelationshipPath
 	}
 	public function import($source, $params, $decode=true, $overwriteRoot=true)
 	{
+		//print_r(explode(',', ',2'));die();
+		//print_r($source);
 		if($decode)
 		{
 			$decodedSource=array();
@@ -46,8 +48,8 @@ class FormRelationshipPath extends RelationshipPath
 				$numPathKeys=count($pathKeys);
 			
 				$ref=&$decodedSource;
-				
-				if($numPathKeys==2)
+//				/echo $numPathKeys."\n";
+				if($numPathKeys==2 && !$pathKeys[0])
 				{
 					$decodedSource[static::IDX_DATA][$pathKeys[1]]=$arrRecord;
 					
@@ -87,6 +89,7 @@ class FormRelationshipPath extends RelationshipPath
 		{
 			$decodedSource=$source;
 		}
+		//print_r($decodedSource); die();
 		//print_r($decodedSource);
 		parent::import($decodedSource, $params, $overwriteRoot);
 	}

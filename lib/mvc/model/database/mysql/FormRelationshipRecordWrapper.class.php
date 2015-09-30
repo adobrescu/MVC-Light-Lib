@@ -20,7 +20,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		{
 			//die('axxa');
 			//root wrapper
-			$record=new FormRecord($record->getArrayRecordId(), $record->getArrayRecord(), $tableName=$record->getTableName());
+			$record=new FormRecord($record->getArrayRecord(), $tableName=$record->getTableName());
 		}
 		$this->tableName=$tableName?$tableName:$record->getGenericTableName();
 		parent::__construct($record, $relationshipPath, $rpk, $tableName);
@@ -42,7 +42,12 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		//return;
 		$tableName=$this->record->getGenericTableName();
 		$className=parent::getTableClassName($tableName);
-		
+		//if($className=='ContentTranslation')
+		{
+			echo 'Aici';
+			print_r($this->getArrayRecordId());
+			echo $className."\n";
+		}
 		//$idColumnNames=RelationshipPath::$___relationships[Database::$___defaultInstance->getName()]['tables'][$tableName][Database::IDX_ID_COLUMNS]['PRIMARY'];
 		//print_r($idColumnNames);
 		//print_r($this->record->getArrayRecord());
@@ -56,29 +61,31 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		
 		if(isset($arrRecordId))
 		{
+			echo 'id:';
 			print_r($arrRecordId);
 		}
 		
 		
-		$record=new $className(isset($arrRecordId)?$arrRecordId:null, null);
+		$record=new $className($this->getArrayRecordId(), null);
 		
 		$errors=new \alib\Exception2();
 		
 		foreach($this->record->getArrayRecord() as $columnName=>$columnValue)
 		{
-			if(isset($this->pkColumns[$this->columnAliases[$columnName]]))//do not set id fields
+			
+			if(isset($this->pkColumns[$this->columnAliases[$columnName]]) && !$columnValue)//do not set id fields
 			{
 				continue;
 			}
 			try
 			{
-				//echo $columnName.'=>'.$columnValue."\n";
+				echo $columnName.'=>'.$columnValue."\n";
 				$record->$columnName=$columnValue;
 			}
 			catch(\Exception $err)
 			{
 				// @todo: collect errors
-				echo $columnName."\n";
+				echo 'Exception: '.$columnName."\n";
 				$errors->addException($err);
 			}
 		}
@@ -93,7 +100,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		catch(\Exception $err)
 		{
 			// @todo: collect errors
-			echo "UPDATE\n";
+			echo "Save: \n".$err->getMessage();
 			$errors->addException($err);
 		}
 		

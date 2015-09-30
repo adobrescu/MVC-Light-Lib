@@ -287,7 +287,7 @@ class ReadOnlyRecord
 	 */
 	
 	
-	public function __construct($id, $arrRecord)
+	public function __construct($arrRecord)
 	{
 		// @todo ??
 		/*
@@ -298,7 +298,60 @@ class ReadOnlyRecord
 		*/
 		
 		$this->RecordSchema___construct();
+		$this->RecordSchema___construct();
+		//$id2=$id;
+		//$id=array();
+		if(func_num_args($arrRecord)>1)
+		{
+			$args=func_get_args();
+			if($args[1]=='users' || $args[1]=='wfis' || $args[1] =='wfis_translations' || $args[1]='wfis_translations_bodies')
+			{
+			}
+			else
+			{
+				print_r($args);
+				print_r(debug_backtrace(10));
+				die('axxa');
+			}
+		}
+		$id=null;
+		if(false)
+		{
+			if(!is_array($id)) //assume a PK with only one column
+			{
+				$id=array(key($this->pkColumns) => $id);
+			}
+			foreach($id as $k=>$v)
+			{
+				$arrRecord[$k]=$v;
+			}
+			$id=array();
+		}
 		
+		if($arrRecord)
+		{
+			if(!is_array($arrRecord))
+			{
+				$arrRecord=array(key($this->pkColumns) => $arrRecord);
+			}
+			foreach($this->pkColumns as $pkColumnName=>$autoIncrement)
+			{
+				if(!isset($arrRecord[$pkColumnName]))//pk not fully specified
+				{
+					$id=array();
+					break;
+				}
+				$id[$pkColumnName]=$arrRecord[$pkColumnName];
+		
+			}
+			if($id)
+			{
+				foreach($id as $pkColumnName=>$pkColumnValue)
+				{
+					unset($arrRecord[$pkColumnName]);
+				}
+			}
+		}
 		
 		$this->uqid=uniqid();
 		//$this->dataKey=$dataKey;
@@ -583,10 +636,10 @@ class FormRecord extends ReadOnlyRecord
 	
 	protected $tableName='', $tableNamePrefix='';
 	
-	public function __construct($id, $arrRecord, $tableName)
+	public function __construct($arrRecord, $tableName)
 	{
 		$this->tableName=$tableName;
-		parent::__construct($id, $arrRecord);
+		parent::__construct($arrRecord);
 	}
 	public function __set($propertyName, $propertyValue)
 	{

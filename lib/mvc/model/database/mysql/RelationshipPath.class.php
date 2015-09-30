@@ -1010,6 +1010,7 @@ class RelationshipPath
 	protected function getParentWrapper($recordWrapper, $refData)
 	{
 		$class=get_class($recordWrapper->record	);
+		//echo 'axxa : '.$class."\n";
 		if($class='alib\model\ContentTranslation')// && $wrapper->title=='2nd Level Category 13')
 		{
 			$arr=$recordWrapper->record->getArrayRecord();
@@ -1030,6 +1031,7 @@ class RelationshipPath
 			{
 				if($fk[1][Database::IDX_FK_TABLE]==$recordWrapper->record->getGenericTableName() && $fk[Database::IDX_FK_DIRECTION]==1)
 				{
+					print_r($fk);
 					$refData2=$refData2[static::IDX_REF_DATA_PARENT];
 					break;
 				}
@@ -1053,11 +1055,12 @@ class RelationshipPath
 		{
 			for($i=0; $i<count($fk[0][Database::IDX_FK_COLUMNS]); $i++)
 			{
-				$recordWrapper->record->{$fk[1][Database::IDX_FK_COLUMNS][$i]}=$parentRecordWrapper->record->{$fk[0][Database::IDX_FK_COLUMNS][$i]};
+				$recordWrapper->setFKColumnValues($fk, 1, $parentRecordWrapper);
+				//$recordWrapper->record->{$fk[1][Database::IDX_FK_COLUMNS][$i]}=$parentRecordWrapper->record->{$fk[0][Database::IDX_FK_COLUMNS][$i]};
 			}
 		}
 		
-		$break=false;
+		//$break=false;
 		$wrapperRecordPathKeyLen=strlen($recordWrapper->rpk);
 		foreach($refData[static::IDX_CHILDREN] as $pathKey=>$child)
 		{
@@ -1071,19 +1074,20 @@ class RelationshipPath
 			{
 				if(substr($rightKey, 0, $wrapperRecordPathKeyLen)==$recordWrapper->rpk)
 				{
-					$recordWrapper->childRecordWrapper=$parentRecordWrapper;
-					$recordWrapper->childRecordFK=$fk;
+					//$recordWrapper->childRecordWrapper=$parentRecordWrapper;
+					//$recordWrapper->childRecordFK=$fk;
 					
 					for($i=0; $i<count($fk[0][Database::IDX_FK_COLUMNS]); $i++)
 					{
-						$recordWrapper->record->{$fk[0][Database::IDX_FK_COLUMNS][$i]}=$childRecordWrapper->record->{$fk[1][Database::IDX_FK_COLUMNS][$i]};
-						$break=true;
+						//$recordWrapper->record->{$fk[0][Database::IDX_FK_COLUMNS][$i]}=$childRecordWrapper->record->{$fk[1][Database::IDX_FK_COLUMNS][$i]};
+						$recordWrapper->setFKColumnValues($fk, 0, $childRecordWrapper);
+						//$break=true;
 						break;
 					}
 				}
-				if($break)
+				//if($break)
 				{
-					break;
+					//break;
 				}
 			}
 		}
@@ -1421,7 +1425,7 @@ class RelationshipRecordWrapper
 			$arrId=null;
 		}
 		
-		$record=new $className($arrId, $arrRecord, $tableName);
+		$record=new $className($arrRecord, $tableName);
 		
 		//@todo check if validation (and the commented block below) is needed
 		/* 
@@ -1597,5 +1601,16 @@ class RelationshipRecordWrapper
 	public function getArrayRecordId2()
 	{
 		return $this->record->getArrayRecordId();
+	}
+	public function setFKColumnValues($fk, $fkDirection, $linkedRecordWrapper)
+	{
+		static $cnt=0;
+		
+		for($i=0; $i<count($fk[0][Database::IDX_FK_COLUMNS]); $i++)
+		{
+				//echo $fk[1][Database::IDX_FK_COLUMNS][$i].'='.$fk[0][Database::IDX_FK_COLUMNS][$i]."\n";
+				//$recordWrapper->setFKColumnValues($fk, 1, $parentRecordWrapper);
+			$this->record->{$fk[$fkDirection][Database::IDX_FK_COLUMNS][$i]}=$linkedRecordWrapper->{$fk[$fkDirection==1?0:1][Database::IDX_FK_COLUMNS][$i]};
+		}
 	}
 }
