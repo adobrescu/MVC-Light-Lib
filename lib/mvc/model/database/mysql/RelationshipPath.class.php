@@ -272,7 +272,8 @@ class RelationshipPath
 					//$lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk][$recordPathKey]=$recordWrapper;
 				}
 				
-				foreach(array_keys($lastPathNodeInfo[static::IDX_REF_DATA_PARENT][static::IDX_DATA]) as $parentRpk)
+				//foreach(array_keys($lastPathNodeInfo[static::IDX_REF_DATA_PARENT][static::IDX_DATA]) as $parentRpk)
+				foreach(array_keys($this->parentRecordWrapper->relationshipPath->path[$this->parentRecordWrapper->relationshipPath->pathLastIndex][static::IDX_DATA]) as $parentRpk)
 				{
 					if(!isset($lastPathNodeInfo[static::IDX_DATA2][$parentRpk]))
 					{
