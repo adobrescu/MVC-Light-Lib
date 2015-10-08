@@ -47,7 +47,7 @@ class Database extends \mysqli
 	const TYPE_FLOAT=7;//'float';	
 	const TYPE_INTEGER=8;//'integer';
 	const TYPE_TIME=9;//'time';
-	const TYPE_TIMESTAMP='10;//timestamp';
+	const TYPE_TIMESTAMP=10;//timestamp;
 	
 	
 	const FLAG_NOT_NULL=1;

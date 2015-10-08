@@ -13,8 +13,10 @@ const ERR_WRONG_FORMAT=100;
 trait RecordSchema
 {
 	protected $database;
+	protected $schema;
 	protected $columns, $columnAliases; //columns info and (type, length etc) and aliases (eg id_user, idUser)
 	protected $pkColumns; //columns that compose the PK
+	protected $fks, $relationships, $relationshipAliases;
 	protected $autoIncrementColumnName; //auto_increment column (part of PK)
 	static $___typeFormatPatterns=array(
 		Database::TYPE_BINARY => '',
@@ -27,19 +29,22 @@ trait RecordSchema
 		Database::TYPE_FLOAT => '',
 		Database::TYPE_INTEGER => '[+\-]{0,1}[0-9]+',
 		Database::TYPE_TIME => '[0-9]{2}\:[0-9]{2}\:[0-9]{2}){0,1}',
-		Database::TYPE_TIMESTAMP => ''
+		Database::TYPE_TIMESTAMP => '([0-9]{4})-([0-9]{2})-([0-9]{2})([ ]+([0-9]{2}):([0-9]{2}):([0-9]{2})){0,1}',
 	);
 	public function __construct()
 	{
 		$this->database=Database::$___defaultInstance;
 		
 		/*get table info*/
-		$schema=$this->database->getRecordSchema($this->tableName, $this->tableNamePrefix);
-		
-		$this->columns=$schema[Database::IDX_COLUMNS];
-		$this->columnAliases=$schema[Database::IDX_COLUMN_ALIASES];
-		$this->pkColumns=$schema[Database::IDX_ID_COLUMNS]['PRIMARY'];
-		$this->autoIncrementColumnName=$schema[Database::IDX_ID_AUTOINCREMENT_COLUMN];
+		$this->schema=$this->database->getRecordSchema($this->tableName, $this->tableNamePrefix);
+		$this->fks=$this->schema['fks'];
+		$this->relationshipAliases=$this->schema[Database::IDX_RELATIONSHIPS_ALIASES];
+		$this->relationships=$this->schema[Database::IDX_RELATIONSHIPS];
+		//print_r($this->schema); die();
+		$this->columns=$this->schema[Database::IDX_COLUMNS];
+		$this->columnAliases=$this->schema[Database::IDX_COLUMN_ALIASES];
+		$this->pkColumns=$this->schema[Database::IDX_ID_COLUMNS]['PRIMARY'];
+		$this->autoIncrementColumnName=$this->schema[Database::IDX_ID_AUTOINCREMENT_COLUMN];
 	}
 	public function validateColumn($columnName, $columnValue)
 	{
@@ -57,14 +62,20 @@ trait RecordSchema
 		{
 			return;
 		}
+		
+		//echo $columnName."\n";
+		//	print_r($columnDef);
+		//	echo static::$___typeFormatPatterns[$columnDef[Database::IDX_TYPE]]."\n---------------------------------------------------\n";
+		
 		//check format
-			
+		
 		if(static::$___typeFormatPatterns[$columnDef[Database::IDX_TYPE]])
 		{
 			if(!preg_match('/^'.static::$___typeFormatPatterns[$columnDef[Database::IDX_TYPE]].'$/', $columnValue, $columnValueParts))
 			{
 				throw new \Exception('', ERR_WRONG_FORMAT);
 			}
+			
 		}
 		
 		//check for valid value
@@ -188,6 +199,15 @@ trait RecordSchema
 			{
 				continue;
 			}
+			//echo $columnName."\n";
+			//print_r($this->columns[$columnName]);
+			//echo "\nXXXXXXXXXXXXXXXXXXXXX\n";
+			//skip timestamps with a default of CURRENT_TIMESTAMP
+			if($this->columns[$columnName][Database::IDX_TYPE]==Database::TYPE_TIMESTAMP && strtolower($this->columns[$columnName][Database::IDX_DEFAULT])=='current_timestamp')
+			{
+				continue;
+			}
+			
 			$query.=($query?','."\n":'').Database::SQL_ID_QUOTE.$columnName.Database::SQL_ID_QUOTE.'='.$this->buildSqlColumnValue($columnName, $columnValue);
 		}
 		
@@ -298,22 +318,10 @@ class ReadOnlyRecord
 		*/
 		
 		$this->RecordSchema___construct();
-		$this->RecordSchema___construct();
+		//$this->RecordSchema___construct();
 		//$id2=$id;
 		//$id=array();
-		if(func_num_args($arrRecord)>1)
-		{
-			$args=func_get_args();
-			if($args[1]=='users' || $args[1]=='wfis' || $args[1] =='wfis_translations' || $args[1]='wfis_translations_bodies')
-			{
-			}
-			else
-			{
-				print_r($args);
-				print_r(debug_backtrace(10));
-				die('axxa');
-			}
-		}
+		
 		$id=null;
 		if(false)
 		{
@@ -336,7 +344,7 @@ class ReadOnlyRecord
 			}
 			foreach($this->pkColumns as $pkColumnName=>$autoIncrement)
 			{
-				if(!isset($arrRecord[$pkColumnName]))//pk not fully specified
+				if(!isset($arrRecord[$pkColumnName]) || !$arrRecord[$pkColumnName] )//pk not fully specified
 				{
 					$id=array();
 					break;
@@ -585,6 +593,11 @@ class Record extends ReadOnlyRecord
 	}
 	public function __set($propertyName, $propertyValue)
 	{
+		//echo  'aici: '.$propertyName.'('.$this->columnAliases[$propertyName].')='.$propertyValue."\n";
+		//if($propertyName=='seo_options')
+		//{
+			//print_r($this->arrRecordId); die('123');
+		//}
 		if(isset($this->columnAliases[$propertyName]))
 		{
 			$this->validateColumn($this->columnAliases[$propertyName], $propertyValue);
@@ -594,7 +607,7 @@ class Record extends ReadOnlyRecord
 		{
 			/*
 			echo(__METHOD__.': column '.$this->tableName.'.'.$propertyName.' not found');
-			print_r(debug_backtrace(10));
+			//print_r(debug_backtrace(10));
 			die();
 			 */
 		}

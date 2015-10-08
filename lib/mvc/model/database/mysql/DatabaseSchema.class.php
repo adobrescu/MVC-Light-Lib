@@ -63,7 +63,8 @@ class DatabaseSchema extends Database
 		{
 			$dbInformationSchema=new Database('information_schema', 'localhost', 'root', '');
 		}
-		
+		$this->relationships=$this->loadRelationships();
+		//print_r($this->relationships);
 		//$tableName=$tableNamePrefix.$tableName;
 		
 		$recordSchema[static::IDX_COLUMNS]=$this->getRecordColumns($dbInformationSchema, $tableNamePrefix.$tableName);
@@ -81,6 +82,10 @@ class DatabaseSchema extends Database
 				}
 			}
 		}
+		
+		$recordSchema[static::IDX_RELATIONSHIPS]=$this->relationships['tables'][$tableName][static::IDX_RELATIONSHIPS];
+		$recordSchema['fks']=$this->relationships['fks'];
+		
 		if(isset(static::$___relationships[$this->name]['tables'][$tableName][static::IDX_RELATIONSHIPS_ALIASES]))
 		{
 			$recordSchema[static::IDX_RELATIONSHIPS_ALIASES]=static::$___relationships[$this->name]['tables'][$tableName][static::IDX_RELATIONSHIPS_ALIASES];
@@ -947,7 +952,7 @@ class DatabaseSchema extends Database
 		/*
 		$startTable='users';
 		$stopTable='groups';
-		print_r($this->getPathBetweenTables($startTable, $stopTable));
+		//print_r($this->getPathBetweenTables($startTable, $stopTable));
 		return;
 		*/
 		foreach($this->tableFKs as $startTable=>$startTableConnections)

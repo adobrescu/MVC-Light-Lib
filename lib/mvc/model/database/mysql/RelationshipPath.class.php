@@ -242,7 +242,7 @@ class RelationshipPath
 	{
 		$lastPathNodeInfo=&$this->path[$this->pathLastIndex];
 		
-		if(!$lastPathNodeInfo[static::IDX_LOADED] && $itemsType!=3)
+		if(!$lastPathNodeInfo[static::IDX_LOADED] && $itemsType!=3 && $itemsType!=4)
 		{
 			$this->load();
 		}
@@ -297,7 +297,7 @@ class RelationshipPath
 				if(
 					($itemsType==2 && $recordWrapper->isPersistent())
 						|| ($itemsType==3 && !$recordWrapper->isPersistent()) 
-						
+						|| $itemsType==4
 					)
 				{
 					
@@ -663,13 +663,6 @@ class RelationshipPath
 	}
 	public function addNew($arrRecord=array(), $overwriteExisting=false)
 	{
-		for($i=0; $i<=$this->pathLastIndex; $i++)
-		{
-			if($this->path[$i][static::IDX_NODE_TYPE]>1)
-			{
-				die(__METHOD__.': cannot add new record on a branch that contains WHERE, ORDER BY or LIMIT');
-			}
-		}
 		/*
 		 * Adaugare unui obiect se face doar la distanta de 1 fk fata de parentWrapper (pboectul record care "apeleaza" path-ul).
 		 * Altfel nu s-ar putea determina ce obiecte se afla intre parentWrapper si cel nou adaugat.
@@ -1043,7 +1036,7 @@ class RelationshipPath
 			{
 				if($fk[1][Database::IDX_FK_TABLE]==$recordWrapper->record->getGenericTableName() && $fk[Database::IDX_FK_DIRECTION]==1)
 				{
-					print_r($fk);
+					//print_r($fk);
 					$refData2=$refData2[static::IDX_REF_DATA_PARENT];
 					break;
 				}
