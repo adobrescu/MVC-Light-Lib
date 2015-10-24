@@ -144,11 +144,11 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 	{
 		return $this->relationshipPath->getMostRightTableName();
 	}
-	public function buildHtmlInput($name, $type, $value=null)
+	public function buildHtmlInput($name, $prefix, $type, $value=null)
 	{
 		if($type=='checkbox')
 		{
-			$html=$this->buildHtmlInput($name, 'hidden', $this->columns[$name][Database::IDX_DEFAULT]);
+			$html=$this->buildHtmlInput($name, $prefix, 'hidden', $this->columns[$name][Database::IDX_DEFAULT]);
 			$attrs=($this->$name=='1'?' checked':'');
 			
 			$value='1';
@@ -157,7 +157,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		{
 			$attrs='';
 		}
-		$html=(isset($html)?$html:'').'<input type="'.$type.'" name="'.$this->relationshipPath->buildPathString($this->rpk).'['.$name.']" value="'.(is_null($value)?$this->$name:$value).'" '.$attrs;
+		$html=(isset($html)?$html:'').'<input type="'.$type.'" name="'.$this->relationshipPath->buildPathString($this->rpk, $prefix).'['.$name.']" value="'.(is_null($value)?$this->$name:$value).'" '.$attrs;
 		
 		if($type!='hidden')
 		{
@@ -168,26 +168,26 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		
 		return $html;
 	}
-	public function buildHtmlTextArea($name, $value=null)
+	public function buildHtmlTextArea($name, $prefix, $value=null)
 	{
 		
-		$html='<textarea name="'.$this->relationshipPath->buildPathString($this->rpk).'['.$name.']" id="'.$this->relationshipPath->getMostRightTableName().'_'.$name.'">'.(is_null($value)?$this->$name:$value).'</textarea>';
+		$html='<textarea name="'.$this->relationshipPath->buildPathString($this->rpk, $prefix).'['.$name.']" id="'.$this->relationshipPath->getMostRightTableName().'_'.$name.'">'.(is_null($value)?$this->$name:$value).'</textarea>';
 		
 		
 		
 		return $html;
 	}
-	public function buildHtmlPkInput()
+	public function buildHtmlPkInput($prefix)
 	{
 		$html='';
 
 		foreach(array_keys($this->pkColumns) as $idColumnName)
 		{
-			$html.=($html?"\n":'').$this->buildHtmlInput($idColumnName, 'hidden');
+			$html.=($html?"\n":'').$this->buildHtmlInput($idColumnName, $prefix, 'hidden');
 		}
 		return $html;
 	}
-	public function buildHtmlDbSelect($name, $value, $relationshipAliases, $titleColumnName)
+	public function buildHtmlDbSelect($name, $prefix, $value, $relationshipAliases, $titleColumnName)
 	{
 		//echo $name.', '.$relationshipAliases;
 		if(!is_array($relationshipAliases))
@@ -212,7 +212,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		//print_r($fk[0][Database::IDX_FK_TABLE]);
 		$items=new \alib\model\Recordset($fk[0][Database::IDX_FK_TABLE]);
 		
-		$html='<select name="'.$this->relationshipPath->buildPathString($this->rpk).'['.$name.']" id="'.$this->relationshipPath->getMostRightTableName().'_'.$name.'">';
+		$html='<select name="'.$this->relationshipPath->buildPathString($this->rpk, $prefix).'['.$name.']" id="'.$this->relationshipPath->getMostRightTableName().'_'.$name.'">';
 		
 		for($items->moveFirst();
 			!$items->isEOF();
@@ -232,7 +232,7 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		
 		return $html;
 	}
-	public function buildHtmlFormField($name, $label, $type)
+	public function buildHtmlFormField($name, $prefix, $label, $type)
 	{
 		$template='<div class="form-field clearfix">
 			<label for="%label_for">%label</label>
@@ -243,13 +243,13 @@ class FormRelationshipRecordWrapper extends RelationshipRecordWrapper
 		switch($type)
 		{
 			case 'textarea':
-				$htmlInput=$this->buildHtmlTextArea($name, $this->$name);
+				$htmlInput=$this->buildHtmlTextArea($name, $prefix, $this->$name);
 				break;
 			case 'db_select':
-				$htmlInput=$this->buildHtmlDbSelect($name, $this->$name, $args[3], $args[4]);
+				$htmlInput=$this->buildHtmlDbSelect($name, $prefix, $this->$name, $args[4], $args[5]);
 				break;
 			default:
-				$htmlInput=$this->buildHtmlInput($name, $type, $this->$name);
+				$htmlInput=$this->buildHtmlInput($name, $prefix, $type, $this->$name);
 		}
 		$htmlInput.="\n";
 		$html=str_replace(array('%label_for', '%label', '%input' ),
