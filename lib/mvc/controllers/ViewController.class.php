@@ -20,6 +20,20 @@ class ViewController extends Controller
 		
 		return $this->views[$viewGId];
 	}
+	/*
+	 * Short way to include a script that creates a view and add the view
+	 * to the controller
+	 */
+	public function addViewByScript($fileName, $flags, $pos, &$data)
+	{
+		include_once($fileName);
+		
+		$this->addView(
+			Object::___getLastInstance(),
+			$flags,
+			$pos
+			);
+	}
 	public function getView($viewGId='')
 	{
 		
