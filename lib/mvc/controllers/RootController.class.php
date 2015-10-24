@@ -688,6 +688,7 @@ class RootController extends ViewController
 							{
 								$this->args+=$this->controllerScriptInfo[static::CSQ_CONTROLLER]['args'];
 							}
+							//echo $this->controllerScriptInfo[static::CSQ_CONTROLLER][static::CSQ_FILENAME]."\n";
 							$controller=$this->controllers[$controllerGId]=$this->includeScript($this->controllerScriptInfo[static::CSQ_CONTROLLER][static::CSQ_FILENAME], $this->args);
 							$this->args=array();
 						}
@@ -706,6 +707,8 @@ class RootController extends ViewController
 				{
 					continue;
 				}
+				//echo "Dispatch\n";
+				$this->dispatchActions($controller, $this->httpInput);
 				if(isset($this->controllerScriptInfo[static::CSQ_METHODS]))
 				{
 					$this->methodScriptInfo=$this->controllerScriptInfo[static::CSQ_METHODS];
@@ -721,13 +724,14 @@ class RootController extends ViewController
 							{
 								$this->args+=$this->controllerScriptInfo[static::CSQ_METHODS][static::CSQ_ARGS];
 							}
+							//echo $this->methodScriptInfo[static::CSQ_FILENAME]."\n";
 							$controller->includeScript($this->methodScriptInfo[static::CSQ_FILENAME], $this->args);
 							$this->args=array();
 						}
 					}
 					
 					/*dispatch actions to controller before dispatching to the target view*/
-					$this->dispatchActions($controller, $this->httpInput);
+					
 				}
 				if($this->processCSQPhase==1) //current controller included, skip to next phase
 				{
