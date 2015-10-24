@@ -2,6 +2,7 @@
 
 namespace alib\model;
 
+include_once(__DIR__.'/../../../../../../../../../alsqlp/PHP/lib/SqlParser.class.php');
 include_once(__DIR__.'/../../../../core/Exception.classes.php');
 include_once(__DIR__.'/DatabaseSchema.class.php');
 
@@ -72,6 +73,7 @@ class Database extends \mysqli
 	protected $userName, $password;
 	static protected $numQueries=0;
 	
+	
 	/*instantiation/creation*/
 	protected function __construct($name, $hostName, $userName, $password, $port=3306, $socket=null)
 	{
@@ -81,7 +83,7 @@ class Database extends \mysqli
 		parent::__construct($this->hostName, $userName, $password, $this->name, $port);
 		
 		parent::set_charset($this->charset);	
-	
+		
 	}
 	static public function ___new($name, $setAsDefault, $hostName=DEFAULT_DB_HOST, $userName=DEFAULT_DB_USERNAME, $password=DEFAULT_DB_PASSWORD, $port=3306, $socket=null)
 	{
@@ -102,11 +104,20 @@ class Database extends \mysqli
 	/*Basic Sql*/
 	public function query($query)
 	{
+		static $parser;
 		static::$numQueries++;
 		if(isset($GLOBALS['dbg']) &&$GLOBALS['dbg'])
 		{
 			echo $query."\n-------------------------------------------------------\n\n";
 		}
+		if(!$parser)
+		{
+			$parser=new \alib\utils\SqlParser();
+		}
+		
+		$parser->parse($query);
+		$query=$parser->rebuildSource();
+		
 		$result=parent::query($query);
 		
 		if($result===false)
@@ -213,9 +224,46 @@ class Database extends \mysqli
 		
 		return static::$___relationships[$this->name];
 	}
-	public function getTableClassName($tableName)
+	public function getTableClassName($genericTableName)
 	{
-		
+		switch($genericTableName)
+		{
+			case 'content_items':
+				$className='ContentItem';
+				break;
+			case 'content_translations':
+				$className='ContentTranslation';
+				break;
+			case 'content_details_translations':
+				$className='ContentDetailsTranslation';
+				break;
+			case 'content_images':
+				$className='ContentImage';
+				break;
+			case 'content_images_translations':
+				$className='ContentImageTranslation';
+				break;
+			case 'users':
+				$className='User';
+				break;
+			case 'content_types':
+				$className='ContentType';
+				break;
+			case 'content_types_translations':
+				$className='ContentTypeTranslation';
+				break;
+			case 'content_templates':
+				$className='ContentTemplate';
+				break;
+			case 'content_templates_translations':
+				$className='ContentTemplateTranslation';
+				break;
+		}
+		if(!isset($className))
+		{
+			die($genericTableName);
+		}
+		return $className;
 	}
 }
 
