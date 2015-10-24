@@ -1,6 +1,7 @@
 <?php
 
 namespace alib\model;
+include_once(LIB_DIR.'/mvc/model/User.class.php');
 //1:50:17 PM (de vineri 02.oct.20150
 /*
  * 
@@ -63,16 +64,21 @@ namespace alib\model;
  */
 class Recordset
 {
-	protected $database, $databaseName, $tablesPrefix;
+	use RecordSchema
+	{
+		RecordSchema::__construct as RecordSchema___construct;
+	}
+	//protected $database
+	protected  $databaseName, $tablesPrefix;
 	public $data, $loaded, $dataCursor;
 	protected $eof;
-	protected $tableName, $idColumns;
+	protected $tableName, $tableNamePrefix, $idColumns;
 	protected $parentPath, $currentParentPath, $currentParentPathDepth=0;
 	protected $clause, $clauseName, $fkIndex, $fkDirection;
 	static $___relationships;
 	protected $paths;
 	protected $usedAsCurrent=false;
-	protected $columns, $columnAliases;
+	//protected $columns, $columnAliases;
 	protected $_currentRecord;
 	protected $parentRPK='';
 	
@@ -103,11 +109,11 @@ class Recordset
 			$this->clause=$relationshipArgs;
 			$this->clauseName=$relationshipOrClause;
 		}
+		$this->RecordSchema___construct();
+		//$schema=$this->database->getRecordSchema($this->tableName, $this->tablesPrefix);
 		
-		$schema=$this->database->getRecordSchema($this->tableName, $this->tablesPrefix);
-		
-		$this->columns=$schema[Database::IDX_COLUMNS];
-		$this->columnAliases=$schema[Database::IDX_COLUMN_ALIASES];
+		//$this->columns=$schema[Database::IDX_COLUMNS];
+		//$this->columnAliases=$schema[Database::IDX_COLUMN_ALIASES];
 		
 		foreach($this->columnAliases as $columnAlias=>$columnName)
 		{
@@ -181,11 +187,7 @@ class Recordset
 	{
 		if(!isset(static::$___relationships[$this->databaseName]['tables'][$this->tableName][Database::IDX_RELATIONSHIPS_ALIASES][$relationshipAlias]))
 		{
-			$relationshipAlias=strtolower($relationshipAlias);
-			if($relationshipAlias=='where' || $relationshipAlias=='orderby' || $relationshipAlias=='limit')
-			{
-				return $relationshipAlias;
-			}
+			
 			return null;
 		}
 		
@@ -200,7 +202,7 @@ class Recordset
 		{
 			$current=current($this->dataCursor[0]);
 			
-			return $current[$this->columnAliases[$columnAlias]];
+			return $current->{$this->columnAliases[$columnAlias]};
 		}
 		
 		$isCurrentRecord=($relationshipAlias=='currentRecord');
@@ -265,7 +267,15 @@ class Recordset
 		
 		die(__METHOD__.': property not found "'.$relationshipAlias.'"');
 	}
-	
+	public function __call($methodName, $methodArgs)
+	{
+		if(substr($methodName, 0, 5)=='where')
+		{
+			$columnName=$this->columnAliases[strtolower(substr($methodName, 5))];
+			//die($columnName.'='.$this->buildSqlColumnValue($columnName, $methodArgs[0]).$methodArgs[0]);
+			return $this->where('`'.$this->tableName.'`.`'.$columnName.'`'.(isset($methodArgs[0])?'='.$this->buildSqlColumnValue($columnName, $methodArgs[0]):''));
+		}
+	}
 	/*navigation*/
 	public function current()
 	{
@@ -290,7 +300,7 @@ class Recordset
 		}
 		if(!isset($this->data[$this->parentRPK]))
 		{
-			die('axxa');
+			die(__METHOD__);
 		}
 		$this->dataCursor[0]=&$this->data[$this->parentRPK];
 		$this->eof=(current($this->dataCursor[0])===false);
@@ -330,7 +340,14 @@ class Recordset
 	protected function loadSharedData()
 	{
 		$query=$this->buildSqlSelect();
-		$this->sharedData=$this->database->loadArrayRecordset($query, '____PATH____');
+		$recordset=$this->database->loadArrayRecordset($query, '____PATH____');
+		foreach($recordset as $rpk=>$record)
+		{
+			//$this->sharedData[$rpk]=$record;
+			$className='\\'.$this->database->getTableClassName($this->tableName);
+			$this->sharedData[$rpk]=new $className($record);
+			//$r=new \User(1001);
+		}
 	}
 	protected function load()
 	{
@@ -367,7 +384,8 @@ class Recordset
 				'fk' => $this->getRelationshipFKLR($parentPath->fkIndex, $parentPath->fkDirection),
 				'id_columns' => $parentPath->idColumns,
 				'fk_index' => $parentPath->fkIndex,
-				'fk_direction' => $parentPath->fkDirection
+				'fk_direction' => $parentPath->fkDirection,
+				'shared_data' => &$parentPath->sharedData
 				);
 		}
 		
@@ -375,12 +393,42 @@ class Recordset
 	}
 	protected function buildSqlSelect($parentKeyLen=null)
 	{
-		$select=$query=$where=$selectPath='';
+		$select=$query=$where=$selectPath=$limit=$orderBy=$whereIDs='';
 		$queryPathNodes=$this->getReversedPath();
 		$numQueryPathNodes=$queryPathNodes;
 		$rightTableNameAlias='';
 		$j=0;
 		$selectParentPathId='';
+		
+		//cauta primul ancestor care are datele incarcate
+		//daca este gasit atunci id-urile lui sint folosite in where
+		//de ex., daca acestorul are un LIMIT
+		//chestia asta asigura ca query-ul va intoarce numai inregistrari corespunzatoare
+		//id-urilor deja incarcate
+		foreach(array_reverse($queryPathNodes) as $qpn)
+		{
+			if($qpn['shared_data'])
+			{
+				$idName='';
+				foreach($qpn['id_columns'] as $idColumnName=>$autoIncrement)
+				{
+					$idName.=($idName?', \'-\', ':'').$idColumnName;
+				}
+				$whereIDs='';
+				foreach($qpn['shared_data'] as $arrRecord)
+				{
+					$whereID='';
+					foreach($qpn['id_columns'] as $idColumnName=>$autoIncrement)
+					{
+						$whereID.=($whereID?', \'-\', ':'').$arrRecord->$idColumnName;
+					}
+					$whereIDs.=($whereIDs?', ':'').$whereID;
+				}
+				$whereIDs='CONCAT(`'.$qpn['table'].'`.`'.$idName.'`) IN ('.$whereIDs.')';
+				//print_r($qpn);
+				//die();
+			}
+		}
 		foreach($queryPath=$queryPathNodes as $qpn/*$queryPathNode*/)
 		{
 			$j++;
@@ -402,7 +450,7 @@ class Recordset
 					$joinedTables[$qpn['table']]=0;
 					$rightTableNameAlias='';
 				}
-				
+				$limit=$where='';
 			}
 			if(($numIdColumns=count($qpn['id_columns']))==1)
 			{
@@ -433,13 +481,24 @@ class Recordset
 			*/
 			if(!$query)
 			{
-				$query='`'.$qpn['table'].'`';
+				$query='`'.$qpn['table'].'` ';
 				$joinedTables[$qpn['table']]=0;
 				continue;
 			}
 			if(!$qpn['fk'])
 			{
-				$where.=($where?' AND ':'').$qpn['clause'];
+				switch($qpn['clause_name'])
+				{
+					case 'where':
+						$where.=($where?' AND ':'').$qpn['clause'];
+						break;
+					case 'limit':
+						$limit=$qpn['clause'];
+						break;
+					case 'orderby':
+						$orderBy=$qpn['clause'];
+						break;
+				}
 				continue;
 			}
 			
@@ -455,10 +514,18 @@ class Recordset
 			$query.="\n";
 		}
 		
-		$query='SELECT '.($selectParentPathId?'CONCAT('.$selectParentPathId.') AS ____PARENT_PATH____, '."\n\t":'').
+		if($whereIDs)
+		{
+			$where=$whereIDs.($where?' AND ('.$where.')':'');
+		}
+		
+		$query='SELECT SQL_CALC_FOUND_ROWS '.($selectParentPathId?'CONCAT('.$selectParentPathId.') AS ____PARENT_PATH____, '."\n\t":'').
 					' CONCAT('.$selectPath.') AS ____PATH____, '."\n\t".
 					'`'.($rightTableNameAlias?$rightTableNameAlias:$this->tableName).'`.* '."\n".
-					'FROM '.$query.($where?"\n".'WHERE '.$where:'');
+					'FROM '.$query.
+					($where?"\n".'WHERE '.$where:'').
+					($orderBy?' ORDER BY '.$orderBy:'').
+					($limit?' LIMIT '.$limit:'');
 		
 		return $query;
 	}
@@ -474,9 +541,26 @@ class Recordset
 	}
 	public function orderBy($orderBy)
 	{
+		if(!isset($this->paths['orderby\\'.$orderBy]))
+		{
+			$this->paths['orderby\\'.$orderBy]=new static('', $this, $this->tablesPrefix, 'orderby', $this->tableName.'.'.$orderBy);
+		}
+			
+		return $this->paths['orderby\\'.$orderBy];
 	}
-	public function limit($limit)
+	public function limit($offset, $limit=null)
 	{
+		if(is_null($limit))
+		{
+			$limit=$offset;
+			$offset=0;
+		}
+		if(!isset($this->paths['limit\\'.$offset.','.$limit]))
+		{
+			$this->paths['limit\\'.$offset.','.$limit]=new static('', $this, $this->tablesPrefix, 'limit', $offset.','.$limit);
+		}
+			
+		return $this->paths['limit\\'.$offset.','.$limit];
 	}
 	
 	/*debug methods*/
@@ -495,5 +579,133 @@ class Recordset
 	public function debugGetUsedAsCurrent()
 	{
 		return $this->usedAsCurrent;
+	}
+}
+
+
+class Recordset2 extends Recordset
+{
+	protected function getRelationship($relationshipAlias)
+	{
+		//echo $relationshipAlias."\n";
+		
+		for($parentPath=$this; $parentPath; $parentPath=$parentPath->parentPath)
+		{
+			if(isset(static::$___relationships[$this->databaseName]['tables'][$parentPath->tableName][Database::IDX_RELATIONSHIPS_ALIASES][$relationshipAlias]))
+			{
+
+				$relationshipIndex=static::$___relationships[$this->databaseName]['tables'][$parentPath->tableName][Database::IDX_RELATIONSHIPS_ALIASES][$relationshipAlias];
+				$relationship=static::$___relationships[$this->databaseName]['tables'][$parentPath->tableName][Database::IDX_RELATIONSHIPS][$relationshipIndex];
+
+				return $relationship;
+			}
+		}
+		
+		return null;
+		
+	}
+	protected function buildSqlSelect($parentKeyLen=null)
+	{
+		$select=$query=$where=$selectPath=$limit=$orderBy=$select='';
+		$queryPathNodes=$this->getReversedPath();
+		$numQueryPathNodes=$queryPathNodes;
+		$rightTableNameAlias='';
+		$j=0;
+		//$selectParentPathId='';
+		
+		
+		foreach($queryPath=$queryPathNodes as $qpn/*$queryPathNode*/)
+		{
+			$j++;
+			if($qpn['fk'])
+			{
+				$leftTableNameAlias=$qpn['fk'][0][Database::IDX_FK_TABLE];
+				if(isset($joinedTables[$leftTableNameAlias]) && $joinedTables[$leftTableNameAlias]>0)
+				{
+					$leftTableNameAlias.='_alias_'.$joinedTables[$leftTableNameAlias];
+				}
+				if(isset($joinedTables[$qpn['table']]))
+				{
+					$joinedTables[$qpn['table']]++;
+					$rightTableNameAlias=$qpn['table'].'_alias_'.$joinedTables[$qpn['table']];
+					
+				}
+				else
+				{
+					$joinedTables[$qpn['table']]=0;
+					$rightTableNameAlias='';
+				}
+				$limit=$where='';
+			}
+			
+			
+			
+			
+			//$selectPath.=($selectPath?', \'\\\\\', ':'').$selectPathId;
+			//if($parentKeyLen && $j<=$parentKeyLen)
+			{
+				//$selectParentPathId=$selectPath;
+			}
+			/*
+			if($qpn['fk'])
+			{
+				$select.=($select?', '."\n\t":'').$qpn['table'].'.*';
+			}
+			*/
+			if(!$query)
+			{
+				$query='`'.$qpn['table'].'` ';
+				$joinedTables[$qpn['table']]=0;
+				continue;
+			}
+			if(!$qpn['fk'])
+			{
+				switch($qpn['clause_name'])
+				{
+					case 'where':
+						$where.=($where?' AND ':'').$qpn['clause'];
+						break;
+					case 'limit':
+						$limit=$qpn['clause'];
+						break;
+					case 'orderby':
+						$orderBy=$qpn['clause'];
+						break;
+				}
+				continue;
+			}
+			
+			$select.=($select?','."\n\t":'').($rightTableNameAlias?$rightTableNameAlias:$qpn['table']).'.*';
+			
+			$query.='LEFT JOIN `'.$qpn['table'].'`'.($rightTableNameAlias?' AS '.$rightTableNameAlias:'')."\n\t".
+				'ON ';
+			
+			
+			for($i=0; $i<count($qpn['fk'][1][Database::IDX_FK_COLUMNS]); $i++)
+			{
+				$query.='`'.$leftTableNameAlias.'`.`'.$qpn['fk'][0][Database::IDX_FK_COLUMNS][$i].'`=`'.($rightTableNameAlias?$rightTableNameAlias:$qpn['table']).'`.`'.$qpn['fk'][1][Database::IDX_FK_COLUMNS][$i].'`';
+			}
+			
+			$query.="\n";
+		}
+		
+		//if($whereIDs)
+		{
+			//$where=$whereIDs.($where?' AND ('.$where.')':'');
+		}
+		
+		$query='SELECT SQL_CALC_FOUND_ROWS '.
+					
+					$select."\n".
+					'FROM '.$query.
+					($where?"\n".'WHERE '.$where:'').
+					($orderBy?' ORDER BY '.$orderBy:'').
+					($limit?' LIMIT '.$limit:'');
+		
+		return $query;
+	}
+	public function test($a=null)
+	{
+		die(' '.$this->buildSqlSelect());
 	}
 }
