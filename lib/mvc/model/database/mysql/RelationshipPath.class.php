@@ -25,8 +25,8 @@ class RelationshipPath
 	protected $database, $databaseName, $tablesPrefix;
 	protected $parentRecordWrapper, $parentRecordWrapperDepth;
 	
-	protected $pathLastIndex;
-	protected $path; //array of refernces to nodes that creates the path
+	public $pathLastIndex;
+	public $path; //array of refernces to nodes that creates the path
 	protected $recordWrapperClassName='';
 	
 	static protected $___uq=1;
@@ -249,7 +249,7 @@ class RelationshipPath
 		$arrItems=array();
 		if($this->parentRecordWrapper)
 		{
-			if(!isset($lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk]))
+			//if(!isset($lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk]))
 			{
 				//echo $this->parentRecordWrapper->rpk."<br>\n";
 				$lastPathNodeInfo[static::IDX_DATA2][$this->parentRecordWrapper->rpk]=array();
@@ -1194,9 +1194,12 @@ class RelationshipPath
 			$tableName=$fk[1][Database::IDX_FK_TABLE];
 		}
 		
-		foreach($params as $key=>$val)
+		if($params)
 		{
-			$sharedNode[$key]=$val;
+			foreach($params as $key=>$val)
+			{
+				$sharedNode[$key]=$val;
+			}
 		}
 		if($visitDataFK)
 		{
@@ -1320,7 +1323,7 @@ class RelationshipPath
 	{
 		if(is_null($arr))
 		{
-			$arr=static::$___sharedData;
+			$arr=$this->path[$this->pathLastIndex];//static::$___sharedData;
 			$print=true;
 		}
 		else
