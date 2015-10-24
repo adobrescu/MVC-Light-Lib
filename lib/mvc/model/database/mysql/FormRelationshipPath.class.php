@@ -7,7 +7,7 @@ include_once(__DIR__.'/RelationshipPath.class.php');
 class FormRelationshipPath extends RelationshipPath
 {
 	const FORM_PATH_SEPARATOR='/';
-	public function buildPathString($rpk)
+	public function buildPathString($rpk, $pathPrefix)
 	{
 		$prefix='';
 		for($i=0; $i<=$this->pathLastIndex; $i++)
@@ -18,7 +18,7 @@ class FormRelationshipPath extends RelationshipPath
 			}
 			$prefix.=($prefix?static::FORM_PATH_SEPARATOR:'').$relationshipType;
 		}
-		return 'data['.$this->encodePrefix($prefix.static::FORM_PATH_SEPARATOR.$rpk).']';
+		return $pathPrefix.'['.$this->encodePrefix($prefix.static::FORM_PATH_SEPARATOR.$rpk).']';
 	}
 	protected function encodePrefix($prefix)
 	{
@@ -35,6 +35,7 @@ class FormRelationshipPath extends RelationshipPath
 	}
 	public function import($source, $params, $decode=true, $overwriteRoot=true)
 	{
+		//die('aa'.$overwriteRoot);
 		//print_r(explode(',', ',2'));die();
 		//print_r($source);
 		if($decode)
