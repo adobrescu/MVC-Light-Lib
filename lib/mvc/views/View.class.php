@@ -21,6 +21,7 @@ class View extends Object
 	
 	const MENU=1;
 	const MENU_TAB=2;
+	const MENU_ROW=4;
 	
 	const ACT_CHANGE_TAB=1;
 	
