@@ -15,6 +15,7 @@ foreach($user->articles->wherePublished(true)->images->items() as $image)
 	echo $image->getSrc();
 }
 
+
 //2. build a complex form for adding an article 
 //(with linked records from more than one table)
 $userData=new UserFormData(1);
@@ -27,8 +28,9 @@ $userData->articles->items(0)->images->addNew();
 //show form inputs
 ...
 $userData->articles->items(0)->title->showInput();
+
 $userData->articles->items(0)->images->items(0)->title->showInput();
-...
+
 
 
 // ON SUNMIT
